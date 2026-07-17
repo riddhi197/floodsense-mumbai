@@ -1,0 +1,15 @@
+waterlogging	28
+trains_halted	24
+highways_blocked	21
+power_cuts	19
+subways_closed	16
+flooding	15
+buses_diverted	14
+evacuation	12
+rescue	11
+severe	9
+chronic	8
+disruption	7
+landslides	5
+stranded	4
+bmc_alert	4

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodSense Mumbai - Advanced Disaster Dashboard</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090d16',
+                        cardBg: 'rgba(17, 25, 40, 0.75)',
+                        borderBg: 'rgba(255, 255, 255, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <style>
+        .glass {
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        body {
+            background-color: #060910;
+            color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden font-sans">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 glass border-r border-borderBg flex flex-col h-full z-20">
+        <div class="p-6 border-b border-borderBg flex items-center gap-3">
+            <div class="p-2 bg-blue-600 rounded-lg text-white">
+                <i data-lucide="droplet" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">FloodSense</h1>
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Mumbai & Konkan</span>
+            </div>
+        </div>
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-500/10">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                Dashboard Overview
+            </button>
+            <button onclick="switchTab('predictor')" id="btn-predictor" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                Flood Predictor
+            </button>
+            <button onclick="switchTab('wards')" id="btn-wards" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                Ward Risk Profiler
+            </button>
+            <button onclick="switchTab('insights')" id="btn-insights" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                Data Insights (EDA)
+            </button>
+            <button onclick="switchTab('news')" id="btn-news" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="newspaper" class="w-4 h-4"></i>
+                Media News Feed (NLP)
+            </button>
+            <button onclick="switchTab('economic')" id="btn-economic" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="indian-rupee" class="w-4 h-4"></i>
+                Economic Simulator
+            </button>
+        </nav>
+        <div class="p-4 border-t border-borderBg">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/20 glass">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-xs font-semibold text-slate-300">API Connection Active</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT WRAPPER -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto">
+        <header class="p-6 border-b border-borderBg flex justify-between items-center glass sticky top-0 z-10">
+            <div>
+                <h2 id="header-title" class="text-xl font-bold">Dashboard Overview</h2>
+                <p id="header-desc" class="text-xs text-slate-400 mt-0.5">Real-time flood intelligence and predictive risk telemetry</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="refreshData()" class="p-2.5 rounded-xl border border-borderBg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-all">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-6 max-w-7xl w-full mx-auto space-y-6 flex-1 pb-16">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-2xl flex items-center gap-4">
+                        <div class="p-4 bg-blue-500/10 text-blue-400 rounded-xl">
+                            <i data-lucide="cloud-rain" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 font-medium">Daily Rain Forecast (Konkan)</span>
+                            <h3 class="text-2xl font-bold mt-0.5">85.0 mm</h3>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-2xl flex items-center gap-4">
+                        <div class="p-4 bg-amber-500/10 text-amber-400 rounded-xl">
+                            <i data-lucide="waves" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 font-medium">Mean Sea Level Tide</span>
+                            <h3 class="text-2xl font-bold mt-0.5">1.52 m</h3>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-2xl flex items-center gap-4">
+                        <div class="p-4 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                            <i data-lucide="activity" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 font-medium">AI Risk Level Status</span>
+                            <h3 class="text-2xl font-bold text-emerald-400 mt-0.5">NORMAL</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass p-6 rounded-2xl">
+                        <h3 class="font-bold text-base mb-4">🌊 Regional Hydrological Map Status</h3>
+                        <div class="border border-borderBg rounded-xl p-4 bg-slate-900/40 text-sm space-y-3">
+                            <div class="flex justify-between items-center pb-2 border-b border-borderBg/50">
+                                <span class="font-medium">Mithi River (Mumbai)</span>
+                                <span class="text-emerald-400 font-semibold">Safe (1.2m)</span>
+                            </div>
+                            <div class="flex justify-between items-center pb-2 border-b border-borderBg/50">
+                                <span class="font-medium">Savitri River (Mahad)</span>
+                                <span class="text-emerald-400 font-semibold">Safe (3.4m)</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium">Vashishti River (Chiplun)</span>
+                                <span class="text-emerald-400 font-semibold">Safe (2.1m)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-2xl">
+                        <h3 class="font-bold text-base mb-4">💡 Predictive Early Warning System</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            This engine couples real-time meteorological forecasts with antecedent soil saturation models. 
+                            If cumulative 7-day rainfall exceeds saturation limits, subsequent light rainfall events trigger early alerts.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: PREDICTOR -->
+            <section id="tab-predictor" class="hidden space-y-6">
+                <div class="glass p-6 rounded-2xl space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-300">Select Model Scope</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="scope-mumbai" onclick="setScope('mumbai')" class="p-4 rounded-xl border border-blue-500 bg-blue-500/10 text-white font-bold transition-all duration-200">
+                                📡 Mumbai City (Local Point Model)
+                            </button>
+                            <button id="scope-konkan" onclick="setScope('konkan')" class="p-4 rounded-xl border border-borderBg bg-slate-800/20 text-slate-400 hover:text-white transition-all duration-200">
+                                🌊 Konkan Division (Regional Stacking Model)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-sm text-slate-400 uppercase tracking-wider">Precipitation Sliders</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>Daily Precipitation Today (mm)</span>
+                                    <span id="val-rain" class="font-bold text-blue-400">85.0 mm</span>
+                                </div>
+                                <input type="range" id="input-rain" min="0" max="400" value="85" step="1" oninput="updateVal('rain')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>3-Day Antecedent Cumulative Rain (mm)</span>
+                                    <span id="val-rain3d" class="font-bold text-blue-400">120.0 mm</span>
+                                </div>
+                                <input type="range" id="input-rain3d" min="0" max="500" value="120" step="1" oninput="updateVal('rain3d')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>7-Day Antecedent Cumulative Rain (mm)</span>
+                                    <span id="val-rain7d" class="font-bold text-blue-400">250.0 mm</span>
+                                </div>
+                                <input type="range" id="input-rain7d" min="0" max="800" value="250" step="1" oninput="updateVal('rain7d')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-sm text-slate-400 uppercase tracking-wider">Temporal & Physical Parameters</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>Precipitation Duration (Hours)</span>
+                                    <span id="val-hours" class="font-bold text-blue-400">12.0 hrs</span>
+                                </div>
+                                <input type="range" id="input-hours" min="0" max="24" value="12" step="0.5" oninput="updateVal('hours')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span>Monsoon Month (June - Oct)</span>
+                                    <span id="val-month" class="font-bold text-blue-400">July (7)</span>
+                                </div>
+                                <input type="range" id="input-month" min="6" max="10" value="7" step="1" oninput="updateVal('month')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <button onclick="runInference()" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 py-4.5 rounded-xl font-bold transition-all text-white flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
+                                <i data-lucide="play" class="w-4 h-4"></i> Run Model Inference
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="prediction-result" class="hidden glass p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-lg">Inference Results</h3>
+                    <div id="pred-banner" class="p-6 rounded-xl border flex flex-col gap-2">
+                        <h4 id="pred-title" class="font-extrabold text-xl">🟢 NO FLOOD WARNING</h4>
+                        <p id="pred-desc" class="text-sm text-slate-300">All systems normal.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm font-semibold">
+                            <span>Flood Event Probability Score</span>
+                            <span id="pred-prob-txt">12.4%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                            <div id="pred-progress" class="bg-emerald-500 h-full transition-all duration-500" style="width: 12.4%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: WARD RISK -->
+            <section id="tab-wards" class="hidden space-y-6">
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="font-bold text-lg mb-2">🏢 GMM Clustering Ward Vulnerability Index</h3>
+                    <p class="text-sm text-slate-400 mb-6">Probabilistic profiling of Mumbai Municipal wards using Gaussian Mixture Models (GMM).</p>
+                    
+                    <div id="wards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Loaded dynamically -->
+                        <div class="text-slate-400 animate-pulse">Loading ward profiles...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: DATA INSIGHTS -->
+            <section id="tab-insights" class="hidden space-y-6">
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="font-bold text-lg mb-4">📅 Monthly Rainfall Outliers</h3>
+                    <div id="chart-month" class="w-full h-96"></div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="font-bold text-lg mb-4">⛈️ Intensity vs. Soil Saturation (Monsoon Days)</h3>
+                    <div id="chart-scatter" class="w-full h-96"></div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="font-bold text-lg mb-4">🎛️ Feature Correlation Heatmap</h3>
+                    <div id="chart-corr" class="w-full h-96"></div>
+                </div>
+            </section>
+
+            <!-- TAB 6: NEWS ANALYSIS -->
+            <section id="tab-news" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-2xl">
+                        <span class="text-xs text-slate-400 font-semibold">Reports Crawled</span>
+                        <h4 class="text-3xl font-bold mt-1">12 Articles</h4>
+                    </div>
+                    <div class="glass p-6 rounded-2xl">
+                        <span class="text-xs text-slate-400 font-semibold">Peak Severity Index</span>
+                        <h4 class="text-3xl font-bold mt-1 text-red-500">15 / 15</h4>
+                    </div>
+                    <div class="glass p-6 rounded-2xl">
+                        <span class="text-xs text-slate-400 font-semibold">Worst Recorded Event</span>
+                        <h4 class="text-3xl font-bold mt-1">2021-07-18</h4>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="font-bold text-lg mb-4">⏱️ Timeline of Extracted News Severity</h3>
+                    <div id="chart-timeline" class="w-full h-80"></div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="font-bold text-lg">📰 Media Intelligence Report Feed</h3>
+                    <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Loaded dynamically -->
+                        <div class="text-slate-400 animate-pulse">Loading news cards...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: ECONOMIC -->
+            <section id="tab-economic" class="hidden space-y-6">
+                <div class="glass p-6 rounded-2xl space-y-4">
+                    <label class="block text-sm font-semibold text-slate-300">Select Severity Level to Model</label>
+                    <select id="eco-severity" onchange="runEconomicSim()" class="w-full p-4 rounded-xl bg-slate-800 border border-borderBg focus:border-blue-500 focus:outline-none text-white">
+                        <option value="No_Flood">No Flood (Normal Operations)</option>
+                        <option value="Slight">Slight Waterlogging</option>
+                        <option value="Moderate" selected>Moderate Flooding</option>
+                        <option value="Severe">Severe Regional Flooding</option>
+                    </select>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div class="glass p-6 rounded-2xl flex items-center gap-4">
+                            <div class="p-4 bg-red-500/10 text-red-400 rounded-xl">
+                                <i data-lucide="dollar-sign" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 font-medium">Estimated Productivity Damage</span>
+                                <h3 id="eco-loss" class="text-2xl font-bold mt-0.5">₹180.0 Crores</h3>
+                            </div>
+                        </div>
+                        <div class="glass p-6 rounded-2xl flex items-center gap-4">
+                            <div class="p-4 bg-amber-500/10 text-amber-400 rounded-xl">
+                                <i data-lucide="clock" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 font-medium">Average Transit Delays</span>
+                                <h3 id="eco-delay" class="text-2xl font-bold mt-0.5">75 Minutes</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- App Logic Script -->
+    <script src="app.js"></script>
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
