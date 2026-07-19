@@ -65,20 +65,19 @@ def predict(req: PredictRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
-    # Map probability to risk category
-    if prob_flood < 0.5:
+    # Map probability to risk category (Tuned for high precision to avoid false alarms in portfolio demo)
+    if prob_flood < 0.50:
         category = "No_Flood"
-        description = "All systems normal. Soil absorption limits are within safe thresholds."
-    elif prob_flood < 0.40:
+        description = "All systems normal. Weather conditions are within safe historical thresholds."
+    elif prob_flood < 0.70:
         category = "Slight"
         description = "Waterlogging expected in chronic low-lying areas. Minor traffic slow-downs."
-    elif prob_flood < 0.75:
+    elif prob_flood < 0.85:
         category = "Moderate"
         description = "Significant waterlogging in key traffic subway nodes. Local train services may experience delays."
     else:
         category = "Severe"
         description = "Emergency alert! Massive divisional flooding expected. Rivers approaching danger levels. Avoid travel."
-        
     return {
         "scope": req.scope,
         "probability": prob_flood,
