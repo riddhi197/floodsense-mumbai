@@ -4,16 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FloodSense Mumbai - Advanced Disaster Dashboard</title>
+    <!-- Google Fonts Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
                     colors: {
-                        darkBg: '#090d16',
-                        cardBg: 'rgba(17, 25, 40, 0.75)',
-                        borderBg: 'rgba(255, 255, 255, 0.08)',
+                        darkBg: '#05070c',
+                        cardBg: 'rgba(10, 15, 28, 0.7)',
+                        borderBg: 'rgba(255, 255, 255, 0.06)',
                     }
                 }
             }
@@ -25,23 +32,54 @@
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <style>
         .glass {
-            background: rgba(17, 25, 40, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(135deg, rgba(15, 22, 38, 0.7) 0%, rgba(8, 12, 22, 0.8) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass:hover {
+            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 16px 40px 0 rgba(59, 130, 246, 0.1);
+        }
+        .tab-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn:hover {
+            transform: translateX(4px);
         }
         body {
-            background-color: #060910;
+            background-color: #05070c;
             color: #f1f5f9;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden font-sans">
+<body class="flex h-screen overflow-hidden font-sans relative">
+    <!-- Ambient Background Glows -->
+    <div class="fixed top-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none z-0"></div>
 
     <!-- SIDEBAR -->
     <aside class="w-64 glass border-r border-borderBg flex flex-col h-full z-20">
         <div class="p-6 border-b border-borderBg flex items-center gap-3">
-            <div class="p-2 bg-blue-600 rounded-lg text-white">
+            <div class="p-2 bg-blue-600 rounded-lg text-white shadow-lg shadow-blue-500/30">
                 <i data-lucide="droplet" class="w-6 h-6"></i>
             </div>
             <div>
