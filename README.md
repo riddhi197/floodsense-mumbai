@@ -10,6 +10,11 @@ This system integrates dual-level machine learning models, Gaussian Mixture Mode
 * **Web Application:** [floodsense-mumbai-ok7l.vercel.app](https://floodsense-mumbai-ok7l.vercel.app)
 * **Architecture Model:** Zero-Dependency Compiled Python Backend + Cloud PostgreSQL + Tailwind CSS SPA
 
+### 🎥 Dashboard Demonstration
+Below is a screen recording demonstration of the live working dashboard:
+
+<video src="https://raw.githubusercontent.com/riddhi197/floodsense-mumbai/main/Dashboard.mp4" width="100%" controls></video>
+
 ### 📊 Exploratory Data Analysis & Visualizations
 Below are the key analytical graphs and model metrics generated during the building of this project (which are also displayed in the dashboard):
 
