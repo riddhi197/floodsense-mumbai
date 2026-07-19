@@ -66,7 +66,7 @@ def predict(req: PredictRequest):
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
     # Map probability to risk category
-    if prob_flood < 0.15:
+    if prob_flood < 0.5:
         category = "No_Flood"
         description = "All systems normal. Soil absorption limits are within safe thresholds."
     elif prob_flood < 0.40:
