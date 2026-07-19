@@ -1,13 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import pandas as pd
-import numpy as np
-import pickle
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
+try:
+    from api.models_compiled import score_mumbai, score_konkan_final
+except ModuleNotFoundError:
+    from models_compiled import score_mumbai, score_konkan_final
 
 # Load env variables for local dev
 load_dotenv()
@@ -48,45 +49,19 @@ def health():
 
 @app.post("/api/predict")
 def predict(req: PredictRequest):
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
-    if req.scope == "mumbai":
-        model_path = os.path.join(base_dir, 'flood_model.pkl')
-        if not os.path.exists(model_path):
-            raise HTTPException(status_code=404, detail="Mumbai flood model not found.")
+    try:
+        if req.scope == "mumbai":
+            # Input features: ['precipitation_sum', 'precipitation_hours', 'precip_3d_sum', 'precip_7d_sum']
+            input_data = [req.rain_today, req.rain_hours, req.rain_3d, req.rain_7d]
+            prob_flood = score_mumbai(input_data)
+        else:
+            # Input features: ['Rainfall_mm', 'Rainfall_3day', 'Rainfall_7day', 'Month']
+            input_data = [req.rain_today, req.rain_3d, req.rain_7d, req.month_val]
+            prob_flood = score_konkan_final(input_data)
             
-        try:
-            with open(model_path, 'rb') as f:
-                model = pickle.load(f)
-                
-            X_in = pd.DataFrame(
-                [[req.rain_today, req.rain_hours, req.rain_3d, req.rain_7d]], 
-                columns=['precipitation_sum', 'precipitation_hours', 'precip_3d_sum', 'precip_7d_sum']
-            )
-            probs = model.predict_proba(X_in)[0]
-            prob_flood = float(probs[1])
-            
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
-            
-    else:
-        model_path = os.path.join(base_dir, 'floodsense_final_model.pkl')
-        if not os.path.exists(model_path):
-            raise HTTPException(status_code=404, detail="Konkan regional model not found.")
-            
-        try:
-            with open(model_path, 'rb') as f:
-                bundle = pickle.load(f)
-            model = bundle['model']
-            features = bundle['features']
-            
-            X_in = pd.DataFrame([[req.rain_today, req.rain_3d, req.rain_7d, req.month_val]], columns=features)
-            probs = model.predict_proba(X_in)[0]
-            prob_flood = float(probs[1])
-            
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
-            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
+
     # Map probability to risk category
     if prob_flood < 0.15:
         category = "No_Flood"
@@ -139,7 +114,7 @@ def get_news():
 @app.get("/api/historical")
 def get_historical():
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor = conn.conn.cursor(cursor_factory=RealDictCursor) if hasattr(conn, 'conn') else conn.cursor(cursor_factory=RealDictCursor)
     try:
         cursor.execute("SELECT Date, Month, Rainfall_mm, Rainfall_3day, Rainfall_7day, Confirmed_Event FROM rainfall_daily ORDER BY Date ASC;")
         rows = cursor.fetchall()
