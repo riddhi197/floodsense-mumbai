@@ -117,7 +117,7 @@ def get_news():
 @app.get("/api/historical")
 def get_historical():
     conn = get_db_connection()
-    cursor = conn.conn.cursor(cursor_factory=RealDictCursor) if hasattr(conn, 'conn') else conn.cursor(cursor_factory=RealDictCursor)
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     try:
         cursor.execute("SELECT Date, Month, Rainfall_mm, Rainfall_3day, Rainfall_7day, Confirmed_Event FROM rainfall_daily ORDER BY Date ASC;")
         rows = cursor.fetchall()
