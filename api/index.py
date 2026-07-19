@@ -53,7 +53,7 @@ def predict(req: PredictRequest):
         if req.scope == "mumbai":
             # Input features: ['precipitation_sum', 'precipitation_hours', 'precip_3d_sum', 'precip_7d_sum']
             input_data = [req.rain_today, req.rain_hours, req.rain_3d, req.rain_7d]
-            prob_flood = score_mumbai(input_data)
+            prob_flood = score_mumbai(input_data)[1]
         else:
             # Input features: ['Rainfall_mm', 'Rainfall_3day', 'Rainfall_7day', 'Month']
             input_data = [req.rain_today, req.rain_3d, req.rain_7d, req.month_val]
