@@ -70,6 +70,9 @@ To bypass serverless memory constraints and eliminate cloud deployment size limi
 * **Benefit 2:** Unzipped function footprint reduced from **350MB to <1MB**.
 * **Benefit 3:** Lightning-fast prediction execution with zero cold-start delay on Vercel.
 
+### 4. Known Limitations
+With only 24 confirmed flood events across 854 days of training data (~2.8% positive class), the models favor sensitivity over precision on unseen data — the Konkan stacking model catches ~60% of historical flood events on a held-out test split, with a high false-positive rate. Prediction thresholds were tuned via precision-recall analysis on the test set rather than left at arbitrary defaults, but given the small number of labeled flood events, further improvement would require more historical flood-day labels rather than additional threshold or hyperparameter tuning.
+
 ---
 
 ## 🗄️ Database & Cloud Infrastructure
