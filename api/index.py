@@ -19,13 +19,16 @@ app = FastAPI(title="FloodSense Mumbai API", description="Serverless backend for
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # In production, restrict to Vercel domain
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Fetch Database URL from Environment
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres.ddgemcedpteukdntyqii:9028049003%40shetye@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    # Use the public read-only fallback or raise error
+    raise RuntimeError("DATABASE_URL environment variable is missing!")
 
 def get_db_connection():
     try:
