@@ -154,8 +154,3 @@ If you want to run the API endpoints locally on your own machine:
 
 ---
 
-## 🎓 Student Profile
-* **Student Name:** Riddhi Shetye
-* **Roll Number:** 260163
-* **Class:** TYDS (Third Year Data Science)
-* **Project Guide:** Prof. Swati Singh
