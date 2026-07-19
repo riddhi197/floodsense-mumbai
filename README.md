@@ -13,8 +13,7 @@ This system integrates dual-level machine learning models, Gaussian Mixture Mode
 ### 🎥 Dashboard Demonstration
 Below is a screen recording demonstration of the live working dashboard:
 
-<video src="https://raw.githubusercontent.com/riddhi197/floodsense-mumbai/main/Dashboard.mp4" width="100%" controls></video>
-
+https://github.com/riddhi197/floodsense-mumbai/blob/main/Dashboard.mp4
 ### 📊 Exploratory Data Analysis & Visualizations
 Below are the key analytical graphs and model metrics generated during the building of this project (which are also displayed in the dashboard):
 
