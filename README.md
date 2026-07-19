@@ -13,13 +13,7 @@ This system integrates dual-level machine learning models, Gaussian Mixture Mode
 ### 🎥 Dashboard Demonstration
 Below is a screen recording demonstration of the live working dashboard:
 
-
-
-https://github.com/user-attachments/assets/d5019869-0eb0-4c45-ac4d-b652835ad5f9
-
-
-
-
+<video src="https://raw.githubusercontent.com/riddhi197/floodsense-mumbai/main/Dashboard.mp4" width="100%" controls></video>
 
 ### 📊 Exploratory Data Analysis & Visualizations
 Below are the key analytical graphs and model metrics generated during the building of this project (which are also displayed in the dashboard):
@@ -87,13 +81,13 @@ The database was migrated from local SQLite (`floodsense.db`) to a high-performa
 Stores historical meteorological logs (854 rows) from the Indian Meteorological Department (IMD):
 ```sql
 CREATE TABLE rainfall_daily (
-    id SERIAL PRIMARY KEY,
-    date DATE UNIQUE,
-    month INT,
-    rainfall_mm DOUBLE PRECISION,
-    rainfall_3day DOUBLE PRECISION,
-    rainfall_7day DOUBLE PRECISION,
-    confirmed_event BOOLEAN
+    Date TEXT PRIMARY KEY,
+    Month INTEGER,
+    Rainfall_mm REAL,
+    Rainfall_3day REAL,
+    Rainfall_7day REAL,
+    Flood_Severity TEXT,
+    Confirmed_Event INTEGER
 );
 ```
 
@@ -101,12 +95,16 @@ CREATE TABLE rainfall_daily (
 Contains GMM clustering profiles, flood-spot counts, and demographic indices for Mumbai's wards:
 ```sql
 CREATE TABLE ward_risk (
-    ward_code VARCHAR(10) PRIMARY KEY,
-    ward_name VARCHAR(100),
-    flood_spots INT,
-    population_density INT,
-    risk_level VARCHAR(20),
-    gmm_probability DOUBLE PRECISION
+    Ward_Code TEXT PRIMARY KEY,
+    Area_Covered TEXT,
+    Risk_Level TEXT,
+    Known_Flood_Spots_Count INTEGER,
+    Population_At_Risk_Pct REAL,
+    Cluster INTEGER,
+    Cluster_Label TEXT,
+    GMM_Prob_Low DOUBLE PRECISION,
+    GMM_Prob_Med DOUBLE PRECISION,
+    GMM_Prob_High DOUBLE PRECISION
 );
 ```
 
@@ -114,12 +112,11 @@ CREATE TABLE ward_risk (
 Lexical news articles parsed for flood severity tracking:
 ```sql
 CREATE TABLE nlp_news (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(200),
-    severity_score DOUBLE PRECISION,
-    category VARCHAR(20),
-    related_date DATE,
-    url TEXT
+    Snippet_ID INTEGER PRIMARY KEY,
+    Related_Date TEXT,
+    Severity_Score INTEGER,
+    Keywords_Found TEXT,
+    Snippet_Preview TEXT
 );
 ```
 
@@ -154,4 +151,8 @@ If you want to run the API endpoints locally on your own machine:
 
 ---
 
-
+## 🎓 Student Profile
+* **Student Name:** Riddhi Shetye
+* **Roll Number:** 260163
+* **Class:** TYDS (Third Year Data Science)
+* **Project Guide:** Prof. Swati Singh
