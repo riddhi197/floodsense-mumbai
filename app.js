@@ -219,8 +219,8 @@ async function loadNews() {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
             font: { color: '#17242B', family: 'IBM Plex Sans' },
-            xaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB' },
-            yaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', range: [0, 16] },
+            xaxis: { gridcolor: '#B7C1BB', linecolor: '#B7C1BB' },
+            yaxis: { gridcolor: '#B7C1BB', linecolor: '#B7C1BB', range: [0, 16] },
             margin: { t: 20, b: 40, l: 40, r: 20 }
         };
 
@@ -303,8 +303,8 @@ async function loadInsights() {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
             font: { color: '#17242B', family: 'IBM Plex Sans' },
-            xaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB' },
-            yaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', title: 'Rainfall (mm)' },
+            xaxis: { gridcolor: '#B7C1BB', linecolor: '#B7C1BB' },
+            yaxis: { gridcolor: '#B7C1BB', linecolor: '#B7C1BB', title: 'Rainfall (mm)' },
             margin: { t: 20, b: 40, l: 50, r: 20 }
         }, { responsive: true, displayModeBar: false });
 
@@ -334,8 +334,8 @@ async function loadInsights() {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
             font: { color: '#17242B', family: 'IBM Plex Sans' },
-            xaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', title: 'Precipitation Intensity Today (mm)' },
-            yaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', title: '7-Day Soil Saturation (mm)' },
+            xaxis: { gridcolor: '#B7C1BB', linecolor: '#B7C1BB', title: 'Precipitation Intensity Today (mm)' },
+            yaxis: { gridcolor: '#B7C1BB', linecolor: '#B7C1BB', title: '7-Day Soil Saturation (mm)' },
             margin: { t: 20, b: 45, l: 50, r: 20 }
         }, { responsive: true, displayModeBar: false });
 
