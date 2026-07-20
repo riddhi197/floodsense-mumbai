@@ -16,22 +16,22 @@ function switchTab(tabId) {
 
     // Reset button states
     document.querySelectorAll('aside nav button').forEach(btn => {
-        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-500/10');
-        btn.classList.add('text-slate-400', 'hover:bg-slate-800/40', 'hover:text-white');
+        btn.classList.remove('bg-water', 'text-white');
+        btn.classList.add('text-inkSoft', 'hover:bg-waterTint', 'hover:text-ink');
     });
     // Highlight active button
     const activeBtn = document.getElementById(`btn-${tabId}`);
-    activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/40', 'hover:text-white');
-    activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-500/10');
+    activeBtn.classList.remove('text-inkSoft', 'hover:bg-waterTint', 'hover:text-ink');
+    activeBtn.classList.add('bg-water', 'text-white');
 
     // Update Header
     const titles = {
         dashboard: { t: "Dashboard Overview", d: "Real-time flood intelligence and predictive risk telemetry" },
-        predictor: { t: "🔮 Flood Severity Predictor", d: "Test what-if precipitation and antecedent soil scenarios on AI models" },
-        wards: { t: "🏢 Ward Risk Profiler", d: "Gaussian Mixture Model (GMM) ward clustering and vulnerability profiles" },
-        insights: { t: "📈 Data Insights & EDA", d: "Interactive visual exploratory analysis of monsoon historical dataset" },
-        news: { t: "📰 News & Media NLP Analysis", d: "Independent news scraping validation feed and timeline index" },
-        economic: { t: "💰 Economic Loss Simulator", d: "Simulate productivity loss and transit delays across severity categories" }
+        predictor: { t: "Flood Severity Predictor", d: "Test what-if precipitation and antecedent soil scenarios on AI models" },
+        wards: { t: "Ward Risk Profiler", d: "Gaussian Mixture Model (GMM) ward clustering and vulnerability profiles" },
+        insights: { t: "Data Insights & EDA", d: "Interactive visual exploratory analysis of monsoon historical dataset" },
+        news: { t: "News & Media NLP Analysis", d: "Independent news scraping validation feed and timeline index" },
+        economic: { t: "Economic Loss Simulator", d: "Simulate productivity loss and transit delays across severity categories" }
     };
     document.getElementById('header-title').innerText = titles[tabId].t;
     document.getElementById('header-desc').innerText = titles[tabId].d;
@@ -63,11 +63,11 @@ function setScope(scope) {
     const btnK = document.getElementById('scope-konkan');
 
     if (scope === 'mumbai') {
-        btnM.className = "p-4 rounded-xl border border-blue-500 bg-blue-500/10 text-white font-bold transition-all duration-200";
-        btnK.className = "p-4 rounded-xl border border-borderBg bg-slate-800/20 text-slate-400 hover:text-white transition-all duration-200";
+        btnM.className = "p-4 rounded-md border-2 border-water bg-waterTint text-ink font-semibold transition-all duration-150";
+        btnK.className = "p-4 rounded-md border-2 border-mist bg-paper text-inkSoft hover:text-ink transition-all duration-150";
     } else {
-        btnK.className = "p-4 rounded-xl border border-blue-500 bg-blue-500/10 text-white font-bold transition-all duration-200";
-        btnM.className = "p-4 rounded-xl border border-borderBg bg-slate-800/20 text-slate-400 hover:text-white transition-all duration-200";
+        btnK.className = "p-4 rounded-md border-2 border-water bg-waterTint text-ink font-semibold transition-all duration-150";
+        btnM.className = "p-4 rounded-md border-2 border-mist bg-paper text-inkSoft hover:text-ink transition-all duration-150";
     }
 }
 
@@ -84,7 +84,7 @@ async function runInference() {
 
     const resDiv = document.getElementById('prediction-result');
     resDiv.classList.remove('hidden');
-    resDiv.innerHTML = `<div class="text-slate-300 animate-pulse">Executing ML Model Inference API...</div>`;
+    resDiv.innerHTML = `<span class="eyebrow">Inference Results</span><div class="text-inkSoft font-mono animate-pulse mt-2">Executing ML model inference API...</div>`;
 
     try {
         const response = await fetch(`${API_BASE}/api/predict`, {
@@ -94,39 +94,44 @@ async function runInference() {
         });
         const data = await response.json();
 
-        let bannerColor = "bg-emerald-500/10 border-emerald-500 text-emerald-400";
-        let icon = "🟢";
+        // Field-report palette per risk category
+        let bannerColor = "bg-safeTint border-safe text-safe";
+        let barColor = "#2E7D5B";
+        let stampClass = "border-safe text-safe bg-safeTint";
         if (data.category === "Slight") {
-            bannerColor = "bg-amber-500/10 border-amber-500 text-amber-400";
-            icon = "🟡";
+            bannerColor = "bg-amberTint border-amber text-amber";
+            barColor = "#B9791A";
+            stampClass = "border-amber text-amber bg-amberTint";
         } else if (data.category === "Moderate") {
-            bannerColor = "bg-orange-500/10 border-orange-500 text-orange-400";
-            icon = "🟠";
+            bannerColor = "bg-amberTint border-flood/60 text-flood";
+            barColor = "#C1631F";
+            stampClass = "border-flood/60 text-flood bg-amberTint";
         } else if (data.category === "Severe") {
-            bannerColor = "bg-red-500/10 border-red-500 text-red-400";
-            icon = "🚨";
+            bannerColor = "bg-floodTint border-flood text-flood";
+            barColor = "#A83B2C";
+            stampClass = "border-flood text-flood bg-floodTint";
         }
 
         const probPct = (data.probability * 100).toFixed(1);
 
         resDiv.innerHTML = `
-            <h3 class="font-bold text-lg">Inference Results (${data.scope === 'mumbai' ? 'Mumbai Model' : 'Konkan Stacking Model'})</h3>
-            <div class="p-6 rounded-xl border ${bannerColor} flex flex-col gap-2">
-                <h4 class="font-extrabold text-xl">${icon} ${data.category.toUpperCase().replace('_', ' ')} LIMIT</h4>
-                <p class="text-sm text-slate-300 font-medium">${data.description}</p>
+            <span class="eyebrow">Inference Results (${data.scope === 'mumbai' ? 'Mumbai Model' : 'Konkan Stacking Model'})</span>
+            <div class="p-6 rounded-md border ${bannerColor} flex flex-col gap-3 mt-2">
+                <span class="stamp ${stampClass} w-fit">${data.category.toUpperCase().replace('_', ' ')} LIMIT</span>
+                <p class="text-sm font-medium text-ink leading-relaxed">${data.description}</p>
             </div>
-            <div class="space-y-2">
+            <div class="space-y-2 mt-4">
                 <div class="flex justify-between text-sm font-semibold">
-                    <span>Flood Event Probability Score</span>
-                    <span class="text-blue-400">${probPct}%</span>
+                    <span class="text-ink">Flood Event Probability Score</span>
+                    <span class="font-mono text-water">${probPct}%</span>
                 </div>
-                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
-                    <div class="h-full transition-all duration-500" style="width: ${probPct}%; background-color: ${data.category === 'Severe' ? '#ef4444' : data.category === 'Moderate' ? '#f97316' : data.category === 'Slight' ? '#eab308' : '#10b981'}"></div>
+                <div class="w-full bg-mist h-3 rounded-full overflow-hidden">
+                    <div class="h-full transition-all duration-500" style="width: ${probPct}%; background-color: ${barColor}"></div>
                 </div>
             </div>
         `;
     } catch (e) {
-        resDiv.innerHTML = `<div class="text-red-400 font-medium">Failed to execute prediction: ${e.message}</div>`;
+        resDiv.innerHTML = `<span class="eyebrow">Inference Results</span><div class="text-flood font-medium mt-2">Failed to execute prediction: ${e.message}</div>`;
     }
 }
 
@@ -147,29 +152,30 @@ async function loadWards() {
             const pop_pct = w.Population_At_Risk_Pct !== undefined ? w.Population_At_Risk_Pct : w.population_at_risk_pct;
             const cluster_label = w.Cluster_Label || w.cluster_label || '';
 
-            let color = 'bg-blue-500';
-            if (risk_level === 'High') color = 'bg-red-500';
-            if (risk_level === 'Medium') color = 'bg-amber-500';
+            let borderColor = 'border-water';
+            let badgeClass = 'bg-waterTint text-water';
+            if (risk_level === 'High') { borderColor = 'border-flood'; badgeClass = 'bg-floodTint text-flood'; }
+            if (risk_level === 'Medium') { borderColor = 'border-amber'; badgeClass = 'bg-amberTint text-amber'; }
 
             container.innerHTML += `
-                <div class="p-5 rounded-xl bg-slate-800/30 glass border-l-4 border-${risk_level === 'High' ? 'red-500' : risk_level === 'Medium' ? 'amber-500' : 'blue-500'} flex flex-col justify-between">
+                <div class="p-5 rounded-md bg-card border border-mist border-l-4 ${borderColor} flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold text-slate-200">Ward ${ward_code}</span>
-                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${risk_level === 'High' ? 'bg-red-500/10 text-red-400' : risk_level === 'Medium' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'}">${risk_level.toUpperCase()} RISK</span>
+                            <span class="font-semibold text-ink">Ward ${ward_code}</span>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full font-mono ${badgeClass}">${risk_level.toUpperCase()} RISK</span>
                         </div>
-                        <h4 class="text-xs text-slate-400 font-semibold mb-3 uppercase tracking-wider">${area_covered}</h4>
-                        <div class="text-sm space-y-1.5 text-slate-300">
-                            <div class="flex justify-between"><span>Known Flood Spots:</span> <span class="font-bold text-slate-100">${known_spots}</span></div>
-                            <div class="flex justify-between"><span>Population at Risk:</span> <span class="font-bold text-slate-100">${pop_pct}%</span></div>
-                            <div class="flex justify-between"><span>GMM Cluster Group:</span> <span class="font-bold text-slate-100">${cluster_label}</span></div>
+                        <h4 class="eyebrow mb-3">${area_covered}</h4>
+                        <div class="text-sm space-y-1.5 text-inkSoft font-mono">
+                            <div class="flex justify-between"><span>Known Flood Spots:</span> <span class="font-semibold text-ink">${known_spots}</span></div>
+                            <div class="flex justify-between"><span>Population at Risk:</span> <span class="font-semibold text-ink">${pop_pct}%</span></div>
+                            <div class="flex justify-between"><span>GMM Cluster Group:</span> <span class="font-semibold text-ink">${cluster_label}</span></div>
                         </div>
                     </div>
                 </div>
             `;
         });
     } catch (e) {
-        container.innerHTML = `<div class="text-red-400 font-medium">Failed to load ward vulnerability details: ${e.message}</div>`;
+        container.innerHTML = `<div class="text-flood font-medium">Failed to load ward vulnerability details: ${e.message}</div>`;
     }
 }
 
@@ -203,18 +209,18 @@ async function loadNews() {
             marker: {
                 size: scores.map(s => s * 2.5),
                 color: scores,
-                colorscale: 'OrRd',
-                line: { width: 1, color: 'DarkSlateGrey' }
+                colorscale: [[0, '#0B6E7A'], [0.5, '#B9791A'], [1, '#A83B2C']],
+                line: { width: 1, color: '#17242B' }
             },
-            line: { color: 'rgba(255,255,255,0.1)' }
+            line: { color: 'rgba(23,36,43,0.15)' }
         };
 
         const layout = {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#f1f5f9' },
-            xaxis: { gridcolor: 'rgba(255,255,255,0.05)', linecolor: 'rgba(255,255,255,0.1)' },
-            yaxis: { gridcolor: 'rgba(255,255,255,0.05)', linecolor: 'rgba(255,255,255,0.1)', range: [0, 16] },
+            font: { color: '#17242B', family: 'IBM Plex Sans' },
+            xaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB' },
+            yaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', range: [0, 16] },
             margin: { t: 20, b: 40, l: 40, r: 20 }
         };
 
@@ -223,33 +229,33 @@ async function loadNews() {
         // 2. Render Cards
         grid.innerHTML = '';
         normalizedData.forEach(n => {
-            let badgeColor = "bg-blue-500/10 text-blue-400 border border-blue-500/20";
-            let border = "border-l-blue-500";
+            let badgeColor = "bg-waterTint text-water border border-water/20";
+            let border = "border-l-water";
             if (n.severity_score >= 10) {
-                badgeColor = "bg-red-500/10 text-red-400 border border-red-500/20";
-                border = "border-l-red-500";
+                badgeColor = "bg-floodTint text-flood border border-flood/20";
+                border = "border-l-flood";
             } else if (n.severity_score >= 5) {
-                badgeColor = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                border = "border-l-amber-500";
+                badgeColor = "bg-amberTint text-amber border border-amber/20";
+                border = "border-l-amber";
             }
 
             const keyBadges = n.keywords_found.split(',')
                 .map(k => k.trim())
                 .filter(k => k)
-                .map(k => `<span class="bg-slate-800/50 text-slate-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-borderBg">${k}</span>`)
+                .map(k => `<span class="bg-paper text-inkSoft text-[10px] font-mono px-2 py-0.5 rounded-md border border-mist">${k}</span>`)
                 .join(' ');
 
             grid.innerHTML += `
-                <div class="p-5 rounded-xl bg-slate-800/30 glass border-l-4 ${border} flex flex-col justify-between">
+                <div class="p-5 rounded-md bg-card border border-mist border-l-4 ${border} flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <span class="text-xs text-slate-400 font-bold">📅 ${n.related_date}</span>
-                            <span class="text-xs font-bold px-2 py-0.5 rounded ${badgeColor}">Score: ${n.severity_score}</span>
+                            <span class="text-xs text-inkSoft font-mono font-semibold">${n.related_date}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded font-mono ${badgeColor}">Score: ${n.severity_score}</span>
                         </div>
-                        <p class="text-sm font-medium italic text-slate-200 leading-relaxed mb-4">"${n.snippet_preview}"</p>
+                        <p class="text-sm font-medium italic text-ink leading-relaxed mb-4">"${n.snippet_preview}"</p>
                     </div>
-                    <div class="border-t border-borderBg/50 pt-3">
-                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Extracted Tags</div>
+                    <div class="border-t border-mist pt-3">
+                        <div class="eyebrow mb-1.5">Extracted Tags</div>
                         <div class="flex flex-wrap gap-1">${keyBadges}</div>
                     </div>
                 </div>
@@ -257,7 +263,7 @@ async function loadNews() {
         });
 
     } catch (e) {
-        grid.innerHTML = `<div class="text-red-400 font-medium">Failed to load media NLP news timeline feed: ${e.message}</div>`;
+        grid.innerHTML = `<div class="text-flood font-medium">Failed to load media NLP news timeline feed: ${e.message}</div>`;
     }
 }
 
@@ -290,15 +296,15 @@ async function loadInsights() {
             name: m,
             type: 'box',
             boxpoints: 'outliers',
-            marker: { color: m === 'July' ? '#ef4444' : '#3b82f6' }
+            marker: { color: m === 'July' ? '#A83B2C' : '#0B6E7A' }
         }));
 
         Plotly.newPlot('chart-month', boxTraces, {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#f1f5f9' },
-            xaxis: { gridcolor: 'rgba(255,255,255,0.05)', linecolor: 'rgba(255,255,255,0.1)' },
-            yaxis: { gridcolor: 'rgba(255,255,255,0.05)', linecolor: 'rgba(255,255,255,0.1)', title: 'Rainfall (mm)' },
+            font: { color: '#17242B', family: 'IBM Plex Sans' },
+            xaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB' },
+            yaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', title: 'Rainfall (mm)' },
             margin: { t: 20, b: 40, l: 50, r: 20 }
         }, { responsive: true, displayModeBar: false });
 
@@ -312,7 +318,7 @@ async function loadInsights() {
             mode: 'markers',
             name: 'Normal Day',
             type: 'scatter',
-            marker: { color: '#3b82f6', size: 6, opacity: 0.6 }
+            marker: { color: '#0B6E7A', size: 6, opacity: 0.55 }
         };
 
         const traceFlood = {
@@ -321,15 +327,15 @@ async function loadInsights() {
             mode: 'markers',
             name: 'Verified Flood Event',
             type: 'scatter',
-            marker: { color: '#ef4444', size: 10, line: { width: 1, color: '#fff' } }
+            marker: { color: '#A83B2C', size: 10, line: { width: 1, color: '#17242B' } }
         };
 
         Plotly.newPlot('chart-scatter', [traceNormal, traceFlood], {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#f1f5f9' },
-            xaxis: { gridcolor: 'rgba(255,255,255,0.05)', linecolor: 'rgba(255,255,255,0.1)', title: 'Precipitation Intensity Today (mm)' },
-            yaxis: { gridcolor: 'rgba(255,255,255,0.05)', linecolor: 'rgba(255,255,255,0.1)', title: '7-Day Soil Saturation (mm)' },
+            font: { color: '#17242B', family: 'IBM Plex Sans' },
+            xaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', title: 'Precipitation Intensity Today (mm)' },
+            yaxis: { gridcolor: '#DBE1DB', linecolor: '#DBE1DB', title: '7-Day Soil Saturation (mm)' },
             margin: { t: 20, b: 45, l: 50, r: 20 }
         }, { responsive: true, displayModeBar: false });
 
@@ -365,14 +371,14 @@ async function loadInsights() {
             x: ['Daily Rain', '3-Day Antecedent', '7-Day Antecedent'],
             y: ['Daily Rain', '3-Day Antecedent', '7-Day Antecedent'],
             type: 'heatmap',
-            colorscale: 'RdBu',
+            colorscale: [[0, '#F8E6E2'], [0.5, '#F1F3EE'], [1, '#0B6E7A']],
             zmin: -1, zmax: 1
         };
 
         Plotly.newPlot('chart-corr', [traceHeat], {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#f1f5f9' },
+            font: { color: '#17242B', family: 'IBM Plex Sans' },
             margin: { t: 20, b: 40, l: 100, r: 20 }
         }, { responsive: true, displayModeBar: false });
 
