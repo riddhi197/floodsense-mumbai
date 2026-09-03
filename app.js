@@ -449,6 +449,7 @@ async function fetchLiveWeather() {
 }
 
 // RUN PREDICTION MODEL INFERENCE (FACTORING IN FIX A TIDE HEIGHT & FIX C AWS)
+// RUN PREDICTION MODEL INFERENCE (FACTORING IN FIX A TIDE HEIGHT & FIX C AWS)
 async function runInference() {
     const reqData = {
         scope: currentScope,
@@ -466,6 +467,8 @@ async function runInference() {
     }
 
     let data;
+    let usingFallback = false;
+
     try {
         const response = await fetch(`${API_BASE}/api/predict`, {
             method: 'POST',
@@ -476,10 +479,15 @@ async function runInference() {
             data = await response.json();
         }
     } catch (e) {
-        console.warn("Backend API unavailable, using local client JS model calculation.");
+        console.warn("Backend API unavailable, using local client JS estimate.");
     }
 
-    if (!data || !data.probability) {
+    // FIX: check for the field being genuinely missing, not just falsy.
+    // The old `!data.probability` check treated a real 0% prediction the
+    // same as "no data received" and silently discarded valid model output.
+    if (!data || data.probability === undefined || data.probability === null) {
+        usingFallback = true;
+
         let prob = 0.05;
         // Factor in Tide Height Booster (Fix A)
         let tideBoost = 0.0;
@@ -509,6 +517,88 @@ async function runInference() {
         data = { scope: reqData.scope, probability: prob, category: category, description: description };
     }
 
+    // Auto-sync Logistics Severity Dropdown to AI Prediction Result!
+    const ecoSelect = document.getElementById('eco-severity');
+    if (ecoSelect) {
+        ecoSelect.value = data.category;
+        runEconomicSim(); // Trigger logistics calculation automatically!
+    }
+
+    let bannerColor = "bg-emerald-50 border-emerald-200 text-[#5F8A6A]";
+    let icon = "🟢";
+    if (data.category === "Slight") {
+        bannerColor = "bg-amber-50 border-amber-200 text-[#D99A2B]";
+        icon = "🟡";
+    } else if (data.category === "Moderate") {
+        bannerColor = "bg-orange-50 border-orange-200 text-[#D97745]";
+        icon = "🟠";
+    } else if (data.category === "Severe") {
+        bannerColor = "bg-red-50 border-red-200 text-[#C9473D]";
+        icon = "🚨";
+    }
+
+    const probPct = (data.probability * 100).toFixed(1);
+
+    // FIX A: Check High Tide Alert Banner (>4.2m)
+    let tideAlertBanner = '';
+    if (reqData.tide_height_m >= 4.2) {
+        tideAlertBanner = `
+            <div class="p-3 bg-red-100 border border-red-300 rounded text-xs text-[#C9473D] font-mono font-extrabold flex items-center gap-2">
+                <span>🚨 ASTRONOMICAL HIGH TIDE WARNING (${reqData.tide_height_m.toFixed(2)}m):</span>
+                <span>BMC Sea Floodgates Closed (Love Grove & Britannia)! Inundation Back-Up Active!</span>
+            </div>
+        `;
+    }
+
+    // FIX: honest labeling. Never claim the trained model produced this
+    // number when it actually came from the local linear estimate.
+    const modelLabel = usingFallback
+        ? "Local Estimate (Live Model Unreachable)"
+        : (data.scope === 'mumbai' ? 'Mumbai City XGBoost' : 'Konkan Stacking Ensemble');
+
+    let fallbackBanner = '';
+    if (usingFallback) {
+        fallbackBanner = `
+            <div class="p-3 bg-amber-100 border border-amber-300 rounded text-xs text-[#8A6A2B] font-mono font-bold flex items-center gap-2">
+                <span>⚠️ BACKEND UNAVAILABLE:</span>
+                <span>Showing a rough local estimate, not the trained ML model. Retry once the connection is restored for a real prediction.</span>
+            </div>
+        `;
+    }
+
+    if (resDiv) {
+        resDiv.innerHTML = `
+            <div class="flex justify-between items-center border-b border-[#E2DFD7] pb-3">
+                <h3 class="font-bold text-base text-[#252525] flex items-center gap-2 font-mono">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-[#D97745]"></i>
+                    AI Hydro Model Result (${modelLabel})
+                </h3>
+                <span class="text-xs font-bold font-mono px-3 py-1 rounded-full ${bannerColor}">${probPct}% RISK SCORE</span>
+            </div>
+            ${fallbackBanner}
+            ${tideAlertBanner}
+            <div class="p-5 rounded border ${bannerColor} flex flex-col gap-2">
+                <h4 class="font-extrabold text-lg">${icon} ${data.category.toUpperCase().replace('_', ' ')} CATEGORY</h4>
+                <p class="text-sm text-slate-800 font-medium">${data.description}</p>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs font-bold text-[#252525] font-mono">
+                    <span>Flood Risk Probability Gauge</span>
+                    <span class="text-[#D97745]">${probPct}%</span>
+                </div>
+                <div class="w-full bg-[#F5F3EE] h-3.5 rounded overflow-hidden border border-[#E2DFD7] p-0.5">
+                    <div class="h-full rounded transition-all duration-700" style="width: ${probPct}%; background: ${data.category === 'Severe' ? 'linear-gradient(90deg, #D99A2B, #C9473D)' : data.category === 'Moderate' ? 'linear-gradient(90deg, #D97745, #D99A2B)' : 'linear-gradient(90deg, #5F8A6A, #D97745)'}"></div>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
+    }
+}
+
+
+    
+           
+            
     // Auto-sync Logistics Severity Dropdown to AI Prediction Result!
     const ecoSelect = document.getElementById('eco-severity');
     if (ecoSelect) {
