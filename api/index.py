@@ -24,18 +24,66 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import sqlite3
+
 # Fetch Database URL from Environment
 DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    # Use the public read-only fallback or raise error
-    raise RuntimeError("DATABASE_URL environment variable is missing!")
 
-def get_db_connection():
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        return conn
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+def query_db(query: str):
+    # Try PostgreSQL first if DATABASE_URL is set
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        try:
+            conn = psycopg2.connect(database_url)
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return [dict(r) for r in rows]
+        except Exception:
+            pass
+
+    # Fallback to local SQLite DB if available
+    db_path = "floodsense.db"
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            # If nlp_news table is missing in SQLite, auto-populate from nlp_severity_scores.csv
+            if "nlp_news" in query:
+                tables = [r[0] for r in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+                if "nlp_news" not in tables and os.path.exists("nlp_severity_scores.csv"):
+                    import pandas as pd
+                    df_nlp = pd.read_csv("nlp_severity_scores.csv")
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS nlp_news (
+                            Snippet_ID INTEGER PRIMARY KEY,
+                            Related_Date TEXT,
+                            Severity_Score INTEGER,
+                            Keywords_Found TEXT,
+                            Snippet_Preview TEXT
+                        )
+                    """)
+                    for _, row in df_nlp.iterrows():
+                        cursor.execute(
+                            "INSERT OR IGNORE INTO nlp_news VALUES (?, ?, ?, ?, ?)",
+                            (int(row['Snippet_ID']), str(row['Related_Date']), int(row['Severity_Score']), str(row['Keywords_Found']), str(row['Snippet_Preview']))
+                        )
+                    conn.commit()
+
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            result = [dict(r) for r in rows]
+            cursor.close()
+            conn.close()
+            return result
+        except Exception as sq_err:
+            raise HTTPException(status_code=500, detail=f"Database query error: {str(sq_err)}")
+
+    raise HTTPException(status_code=500, detail="Database connection error: Neither cloud PostgreSQL nor local SQLite database is accessible.")
 
 # Request schema for predictions
 class PredictRequest(BaseModel):
@@ -48,7 +96,17 @@ class PredictRequest(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"status": "healthy", "database_connected": True}
+    db_connected = False
+    try:
+        query_db("SELECT 1;")
+        db_connected = True
+    except Exception:
+        db_connected = False
+        
+    return {
+        "status": "healthy" if db_connected else "degraded",
+        "database_connected": db_connected
+    }
 
 @app.post("/api/predict")
 def predict(req: PredictRequest):
@@ -87,42 +145,13 @@ def predict(req: PredictRequest):
 
 @app.get("/api/wards")
 def get_wards():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute("SELECT * FROM ward_risk ORDER BY Ward_Code ASC;")
-        rows = cursor.fetchall()
-        return rows
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
+    return query_db("SELECT * FROM ward_risk ORDER BY Ward_Code ASC;")
 
 @app.get("/api/news")
 def get_news():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute("SELECT * FROM nlp_news ORDER BY Related_Date DESC;")
-        rows = cursor.fetchall()
-        return rows
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
+    return query_db("SELECT * FROM nlp_news ORDER BY Related_Date DESC;")
 
 @app.get("/api/historical")
 def get_historical():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute("SELECT Date, Month, Rainfall_mm, Rainfall_3day, Rainfall_7day, Confirmed_Event FROM rainfall_daily ORDER BY Date ASC;")
-        rows = cursor.fetchall()
-        return rows
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
+    return query_db("SELECT Date, Month, Rainfall_mm, Rainfall_3day, Rainfall_7day, Confirmed_Event FROM rainfall_daily ORDER BY Date ASC;")
+
