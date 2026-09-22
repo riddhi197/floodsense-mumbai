@@ -70,9 +70,11 @@
         }
         #leaflet-map {
             height: 560px;
+            min-height: 560px;
             width: 100%;
             border-radius: 6px;
             z-index: 10;
+            background-color: #F5F3EE;
         }
         /* Custom scrollbars */
         ::-webkit-scrollbar {
@@ -432,7 +434,20 @@
                             </div>
                         </div>
 
-                        <!-- Input 5: Month -->
+                        <!-- Input 5: SCADA Drainage & Pump Capacity % -->
+                        <div class="p-4 rounded bg-[#F5F3EE] border border-[#E2DFD7] space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-700">Drain Capacity (SCADA)</span>
+                                <span id="val-drain" class="text-xs font-black text-[#D97745] font-mono">100% (Design)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="stepVal('drain', -10)" class="w-8 h-8 rounded bg-white hover:bg-slate-100 font-black text-[#252525] transition-all border border-[#E2DFD7] shadow-sm flex items-center justify-center">−</button>
+                                <input type="number" id="input-drain" min="30" max="100" value="100" onchange="syncInput('drain')" class="flex-1 p-1.5 bg-white border border-[#E2DFD7] rounded text-center font-black text-[#252525] font-mono text-xs focus:outline-none focus:border-[#D97745]">
+                                <button onclick="stepVal('drain', 10)" class="w-8 h-8 rounded bg-white hover:bg-slate-100 font-black text-[#252525] transition-all border border-[#E2DFD7] shadow-sm flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Input 6: Month -->
                         <div class="p-4 rounded bg-[#F5F3EE] border border-[#E2DFD7] space-y-2">
                             <div class="flex justify-between items-center">
                                 <span class="text-xs font-bold text-slate-700">Monsoon Month</span>
@@ -444,6 +459,7 @@
                                 <button onclick="stepVal('month', 1)" class="w-8 h-8 rounded bg-white hover:bg-slate-100 font-black text-[#252525] transition-all border border-[#E2DFD7] shadow-sm flex items-center justify-center">+</button>
                             </div>
                         </div>
+
                     </div>
 
                     <button onclick="runInference()" class="w-full mt-4 bg-[#D97745] hover:bg-[#b85e30] py-3.5 rounded font-black transition-all text-white flex items-center justify-center gap-2 shadow-sm font-mono">

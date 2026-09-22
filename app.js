@@ -93,10 +93,16 @@ function initGisMap() {
     const mapDiv = document.getElementById('leaflet-map');
     if (mapDiv && !map) {
         try {
-            map = L.map('leaflet-map').setView([19.0760, 72.8777], 11);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '© OpenStreetMap contributors, Esri GIS'
+            map = L.map('leaflet-map', {
+                center: [19.0760, 72.8777],
+                zoom: 11,
+                scrollWheelZoom: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
             }).addTo(map);
 
             hazardBuffersGroup = L.layerGroup().addTo(map);
@@ -110,6 +116,10 @@ function initGisMap() {
 
             // Add Municipal Map Legend
             addMapLegend();
+
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
         } catch (e) {
             console.warn("Leaflet Map init error: ", e);
         }
@@ -360,6 +370,8 @@ function stepVal(type, delta) {
         currVal = Math.max(6, Math.min(10, currVal));
     } else if (type === 'tide') {
         currVal = Math.max(0.5, Math.min(5.5, currVal));
+    } else if (type === 'drain') {
+        currVal = Math.max(30, Math.min(100, currVal));
     } else {
         currVal = Math.max(0, currVal);
     }
@@ -377,11 +389,13 @@ function syncInput(type) {
     if (type === 'rain3d') txtEl.innerText = `${val.toFixed(1)} mm`;
     if (type === 'rain7d') txtEl.innerText = `${val.toFixed(1)} mm`;
     if (type === 'tide') txtEl.innerText = `${val.toFixed(2)} m`;
+    if (type === 'drain') txtEl.innerText = `${val.toFixed(0)}% (SCADA)`;
     if (type === 'month') {
         const months = {6: 'June (6)', 7: 'July (7)', 8: 'August (8)', 9: 'September (9)', 10: 'October (10)'};
         txtEl.innerText = months[val] || `Month (${val})`;
     }
 }
+
 
 // Set model scope
 function setScope(scope) {
@@ -448,8 +462,7 @@ async function fetchLiveWeather() {
     }
 }
 
-// RUN PREDICTION MODEL INFERENCE (FACTORING IN FIX A TIDE HEIGHT & FIX C AWS)
-// RUN PREDICTION MODEL INFERENCE (FACTORING IN FIX A TIDE HEIGHT & FIX C AWS)
+// RUN PREDICTION MODEL INFERENCE (FACTORING IN TIDE, SCADA DRAINAGE & AWS GRANULARITY)
 async function runInference() {
     const reqData = {
         scope: currentScope,
@@ -457,6 +470,8 @@ async function runInference() {
         rain_3d: parseFloat(document.getElementById('input-rain3d').value) || 120.0,
         rain_7d: parseFloat(document.getElementById('input-rain7d').value) || 250.0,
         tide_height_m: parseFloat(document.getElementById('input-tide').value) || 3.4,
+        drainage_capacity_pct: parseFloat(document.getElementById('input-drain') ? document.getElementById('input-drain').value : 100) || 100.0,
+        aws_station: document.getElementById('select-aws') ? document.getElementById('select-aws').value : 'santacruz',
         month_val: parseInt(document.getElementById('input-month').value) || 7
     };
 
@@ -467,8 +482,6 @@ async function runInference() {
     }
 
     let data;
-    let usingFallback = false;
-
     try {
         const response = await fetch(`${API_BASE}/api/predict`, {
             method: 'POST',
@@ -479,31 +492,30 @@ async function runInference() {
             data = await response.json();
         }
     } catch (e) {
-        console.warn("Backend API unavailable, using local client JS estimate.");
+        console.warn("Backend API unavailable, using local client JS model calculation.");
     }
 
-    // FIX: check for the field being genuinely missing, not just falsy.
-    // The old `!data.probability` check treated a real 0% prediction the
-    // same as "no data received" and silently discarded valid model output.
     if (!data || data.probability === undefined || data.probability === null) {
-        usingFallback = true;
-
         let prob = 0.05;
-        // Factor in Tide Height Booster (Fix A)
         let tideBoost = 0.0;
         if (reqData.tide_height_m >= 4.2) {
-            tideBoost = 0.25; // High Spring Tide compounding effect!
+            tideBoost = 0.25;
         } else if (reqData.tide_height_m >= 3.8) {
             tideBoost = 0.12;
         }
 
+        let drainPenalty = Math.max(0.0, (100.0 - reqData.drainage_capacity_pct) * 0.0035);
+
+        let rawMl = 0.05;
         if (reqData.scope === 'mumbai') {
-            prob = Math.min(0.98, (reqData.rain_today * 0.004) + (reqData.rain_3d * 0.0018) + (reqData.rain_7d * 0.0008) + tideBoost);
+            rawMl = (reqData.rain_today * 0.004) + (reqData.rain_3d * 0.0018) + (reqData.rain_7d * 0.0008);
         } else {
-            prob = Math.min(0.98, (reqData.rain_today * 0.0045) + (reqData.rain_3d * 0.002) + (reqData.rain_7d * 0.001) + tideBoost);
+            rawMl = (reqData.rain_today * 0.0045) + (reqData.rain_3d * 0.002) + (reqData.rain_7d * 0.001);
         }
+        prob = Math.min(0.98, rawMl + tideBoost + drainPenalty);
+
         let category = "No_Flood";
-        let description = "All systems normal. Weather & tide conditions are within safe historical thresholds.";
+        let description = "All systems normal. Weather & drainage conditions are within safe historical thresholds.";
         if (prob >= 0.85) {
             category = "Severe";
             description = "Emergency alert! Massive divisional flooding expected. Rivers approaching danger levels. Avoid travel.";
@@ -514,7 +526,16 @@ async function runInference() {
             category = "Slight";
             description = "Waterlogging expected in chronic low-lying areas. Minor traffic slow-downs.";
         }
-        data = { scope: reqData.scope, probability: prob, category: category, description: description };
+        data = {
+            scope: reqData.scope,
+            raw_ml_probability: Math.min(0.98, rawMl),
+            tide_surge_offset: tideBoost,
+            drainage_penalty_offset: drainPenalty,
+            probability: prob,
+            category: category,
+            description: description,
+            is_fallback: true
+        };
     }
 
     // Auto-sync Logistics Severity Dropdown to AI Prediction Result!
@@ -538,6 +559,9 @@ async function runInference() {
     }
 
     const probPct = (data.probability * 100).toFixed(1);
+    const rawMlPct = ((data.raw_ml_probability || (data.probability - (data.tide_surge_offset || 0) - (data.drainage_penalty_offset || 0))) * 100).toFixed(1);
+    const tidePct = ((data.tide_surge_offset || 0) * 100).toFixed(1);
+    const drainPct = ((data.drainage_penalty_offset || 0) * 100).toFixed(1);
 
     // FIX A: Check High Tide Alert Banner (>4.2m)
     let tideAlertBanner = '';
@@ -550,21 +574,18 @@ async function runInference() {
         `;
     }
 
-    // FIX: honest labeling. Never claim the trained model produced this
-    // number when it actually came from the local linear estimate.
-    const modelLabel = usingFallback
-        ? "Local Estimate (Live Model Unreachable)"
-        : (data.scope === 'mumbai' ? 'Mumbai City XGBoost' : 'Konkan Stacking Ensemble');
-
-    let fallbackBanner = '';
-    if (usingFallback) {
-        fallbackBanner = `
-            <div class="p-3 bg-amber-100 border border-amber-300 rounded text-xs text-[#8A6A2B] font-mono font-bold flex items-center gap-2">
-                <span>⚠️ BACKEND UNAVAILABLE:</span>
-                <span>Showing a rough local estimate, not the trained ML model. Retry once the connection is restored for a real prediction.</span>
+    // Fallback indicator badge
+    let fallbackNotice = '';
+    if (data.is_fallback) {
+        fallbackNotice = `
+            <div class="p-2.5 bg-amber-50 border border-amber-200 rounded text-xs text-[#D99A2B] font-mono font-bold flex items-center gap-2">
+                <span>⚠️ BACKEND UNREACHABLE:</span>
+                <span>Displaying local linear estimate (offline mode), not trained XGBoost model.</span>
             </div>
         `;
     }
+
+    const modelLabel = data.is_fallback ? 'Local Linear Estimate (API Offline)' : (data.scope === 'mumbai' ? 'Mumbai City XGBoost' : 'Konkan Stacking Ensemble');
 
     if (resDiv) {
         resDiv.innerHTML = `
@@ -575,80 +596,37 @@ async function runInference() {
                 </h3>
                 <span class="text-xs font-bold font-mono px-3 py-1 rounded-full ${bannerColor}">${probPct}% RISK SCORE</span>
             </div>
-            ${fallbackBanner}
+            ${fallbackNotice}
             ${tideAlertBanner}
             <div class="p-5 rounded border ${bannerColor} flex flex-col gap-2">
                 <h4 class="font-extrabold text-lg">${icon} ${data.category.toUpperCase().replace('_', ' ')} CATEGORY</h4>
                 <p class="text-sm text-slate-800 font-medium">${data.description}</p>
             </div>
+
+            <!-- TRANSPARENT COMPOSITE HYDRO BREAKDOWN -->
+            <div class="p-3 rounded bg-[#F5F3EE] border border-[#E2DFD7] text-xs font-mono space-y-1.5">
+                <div class="font-bold text-[#252525] uppercase text-[11px] border-b border-[#E2DFD7] pb-1">
+                    🔬 Hydro Risk Sub-Breakdown:
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
+                    <div class="p-1.5 rounded bg-white border border-[#E2DFD7]">
+                        <span class="text-slate-600 block">🤖 ML Base Prob</span>
+                        <b class="text-[#252525] text-xs">${rawMlPct}%</b>
+                    </div>
+                    <div class="p-1.5 rounded bg-white border border-[#E2DFD7]">
+                        <span class="text-slate-600 block">🌊 Sea Tide Surge</span>
+                        <b class="text-[#C9473D] text-xs">+${tidePct}%</b>
+                    </div>
+                    <div class="p-1.5 rounded bg-white border border-[#E2DFD7]">
+                        <span class="text-slate-600 block">⚙️ SCADA Drain Silt</span>
+                        <b class="text-[#D99A2B] text-xs">+${drainPct}%</b>
+                    </div>
+                </div>
+            </div>
+
             <div class="space-y-2">
                 <div class="flex justify-between text-xs font-bold text-[#252525] font-mono">
-                    <span>Flood Risk Probability Gauge</span>
-                    <span class="text-[#D97745]">${probPct}%</span>
-                </div>
-                <div class="w-full bg-[#F5F3EE] h-3.5 rounded overflow-hidden border border-[#E2DFD7] p-0.5">
-                    <div class="h-full rounded transition-all duration-700" style="width: ${probPct}%; background: ${data.category === 'Severe' ? 'linear-gradient(90deg, #D99A2B, #C9473D)' : data.category === 'Moderate' ? 'linear-gradient(90deg, #D97745, #D99A2B)' : 'linear-gradient(90deg, #5F8A6A, #D97745)'}"></div>
-                </div>
-            </div>
-        `;
-        lucide.createIcons();
-    }
-}
-
-
-    
-           
-            
-    // Auto-sync Logistics Severity Dropdown to AI Prediction Result!
-    const ecoSelect = document.getElementById('eco-severity');
-    if (ecoSelect) {
-        ecoSelect.value = data.category;
-        runEconomicSim(); // Trigger logistics calculation automatically!
-    }
-
-    let bannerColor = "bg-emerald-50 border-emerald-200 text-[#5F8A6A]";
-    let icon = "🟢";
-    if (data.category === "Slight") {
-        bannerColor = "bg-amber-50 border-amber-200 text-[#D99A2B]";
-        icon = "🟡";
-    } else if (data.category === "Moderate") {
-        bannerColor = "bg-orange-50 border-orange-200 text-[#D97745]";
-        icon = "🟠";
-    } else if (data.category === "Severe") {
-        bannerColor = "bg-red-50 border-red-200 text-[#C9473D]";
-        icon = "🚨";
-    }
-
-    const probPct = (data.probability * 100).toFixed(1);
-
-    // FIX A: Check High Tide Alert Banner (>4.2m)
-    let tideAlertBanner = '';
-    if (reqData.tide_height_m >= 4.2) {
-        tideAlertBanner = `
-            <div class="p-3 bg-red-100 border border-red-300 rounded text-xs text-[#C9473D] font-mono font-extrabold flex items-center gap-2">
-                <span>🚨 ASTRONOMICAL HIGH TIDE WARNING (${reqData.tide_height_m.toFixed(2)}m):</span>
-                <span>BMC Sea Floodgates Closed (Love Grove & Britannia)! Inundation Back-Up Active!</span>
-            </div>
-        `;
-    }
-
-    if (resDiv) {
-        resDiv.innerHTML = `
-            <div class="flex justify-between items-center border-b border-[#E2DFD7] pb-3">
-                <h3 class="font-bold text-base text-[#252525] flex items-center gap-2 font-mono">
-                    <i data-lucide="shield-alert" class="w-5 h-5 text-[#D97745]"></i>
-                    AI Hydro Model Result (${data.scope === 'mumbai' ? 'Mumbai City XGBoost' : 'Konkan Stacking Ensemble'})
-                </h3>
-                <span class="text-xs font-bold font-mono px-3 py-1 rounded-full ${bannerColor}">${probPct}% RISK SCORE</span>
-            </div>
-            ${tideAlertBanner}
-            <div class="p-5 rounded border ${bannerColor} flex flex-col gap-2">
-                <h4 class="font-extrabold text-lg">${icon} ${data.category.toUpperCase().replace('_', ' ')} CATEGORY</h4>
-                <p class="text-sm text-slate-800 font-medium">${data.description}</p>
-            </div>
-            <div class="space-y-2">
-                <div class="flex justify-between text-xs font-bold text-[#252525] font-mono">
-                    <span>Flood Risk Probability Gauge</span>
+                    <span>Composite Hydro Risk Probability Gauge</span>
                     <span class="text-[#D97745]">${probPct}%</span>
                 </div>
                 <div class="w-full bg-[#F5F3EE] h-3.5 rounded overflow-hidden border border-[#E2DFD7] p-0.5">
