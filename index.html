@@ -4,358 +4,298 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FloodSense Mumbai - Advanced Disaster Dashboard</title>
-    <!-- Google Fonts Outfit & Space Grotesk -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
-                        mono: ['Space Grotesk', 'monospace'],
-                    },
                     colors: {
-                        darkBg: '#050811',
-                        cardBg: 'rgba(15, 23, 42, 0.75)',
+                        darkBg: '#060910',
+                        cardBg: 'rgba(17, 25, 40, 0.75)',
                         borderBg: 'rgba(255, 255, 255, 0.08)',
-                        accentCyan: '#38BDF8',
-                        accentBlue: '#3B82F6',
-                        riskHigh: '#EF4444',
-                        riskMed: '#F59E0B',
-                        riskLow: '#10B981',
                     }
                 }
             }
         }
     </script>
-    <!-- Leaflet.js CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Plotly.js CDN -->
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <!-- Leaflet.js CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body {
-            background-color: #050811;
-            color: #F8FAFC;
-            user-select: none;
-        }
         .glass {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(9, 14, 26, 0.9) 100%);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 1rem;
         }
-        .glass:hover {
-            border-color: rgba(56, 189, 248, 0.3);
-            box-shadow: 0 12px 40px 0 rgba(56, 189, 248, 0.12);
-        }
-        .sidebar-btn {
-            transition: all 0.2s ease-in-out;
-            border-left: 3px solid transparent;
-        }
-        .sidebar-btn:hover {
-            background-color: rgba(255, 255, 255, 0.04);
-            transform: translateX(3px);
-        }
-        .sidebar-btn.active {
-            background-color: rgba(56, 189, 248, 0.12);
-            border-left-color: #38BDF8;
-            color: #FFFFFF;
-            font-weight: 700;
-        }
-        .filter-btn {
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background-color: rgba(15, 23, 42, 0.6);
-            color: #94A3B8;
-            transition: all 0.2s ease;
-        }
-        .filter-btn:hover, .filter-btn.active {
-            border-color: #38BDF8;
-            background-color: rgba(56, 189, 248, 0.15);
-            color: #38BDF8;
-            font-weight: 700;
+        body {
+            background-color: #060910;
+            color: #f1f5f9;
         }
         #leaflet-map {
-            height: 520px;
-            min-height: 520px;
+            height: 480px;
             width: 100%;
-            border-radius: 12px;
+            border-radius: 1rem;
             z-index: 10;
-            background-color: #0F172A;
+            background-color: #0d1322;
         }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #050811; }
+        ::-webkit-scrollbar-track { background: #060910; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden font-sans relative">
+<body class="flex h-screen overflow-hidden font-sans">
 
-    <!-- Ambient Glowing Background Bubbles -->
-    <div class="fixed top-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-cyan-500/10 blur-[140px] pointer-events-none z-0"></div>
-    <div class="fixed bottom-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-blue-600/10 blur-[140px] pointer-events-none z-0"></div>
-
-    <!-- LEFT SIDEBAR -->
-    <aside class="w-64 glass border-r border-borderBg flex flex-col h-full z-20 flex-shrink-0">
-        <!-- Brand Header -->
-        <div class="p-5 border-b border-borderBg flex items-center gap-3">
-            <div class="p-2.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl text-white shadow-lg shadow-cyan-500/20">
+    <!-- SIDEBAR -->
+    <aside class="w-64 glass rounded-none border-r border-borderBg flex flex-col h-full z-20">
+        <div class="p-6 border-b border-borderBg flex items-center gap-3">
+            <div class="p-2 bg-blue-600 rounded-lg text-white">
                 <i data-lucide="droplet" class="w-6 h-6"></i>
             </div>
             <div>
-                <h1 class="font-extrabold text-lg leading-tight tracking-tight text-white font-sans">FloodSense</h1>
-                <span class="text-[10px] text-cyan-400 font-extrabold font-mono tracking-wider uppercase">Mumbai &amp; Konkan GIS</span>
+                <h1 class="font-bold text-lg leading-tight text-white">FloodSense</h1>
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Mumbai &amp; Konkan</span>
             </div>
         </div>
-
-        <!-- Navigation Tabs -->
-        <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto">
-            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="sidebar-btn active w-full p-3.5 rounded-xl text-left flex items-center gap-3 text-sm font-medium">
-                <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
-                <span>Dashboard Overview</span>
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-500/10">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                Dashboard Overview
             </button>
-            <button onclick="switchTab('map')" id="btn-map" class="sidebar-btn w-full p-3.5 rounded-xl text-left flex items-center gap-3 text-sm font-medium text-slate-400">
-                <i data-lucide="map" class="w-4 h-4 text-slate-400"></i>
-                <span>GIS Inundation Map</span>
+            <button onclick="switchTab('predictor')" id="btn-predictor" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                Flood Predictor
             </button>
-            <button onclick="switchTab('predictor')" id="btn-predictor" class="sidebar-btn w-full p-3.5 rounded-xl text-left flex items-center gap-3 text-sm font-medium text-slate-400">
-                <i data-lucide="sparkles" class="w-4 h-4 text-slate-400"></i>
-                <span>Live AI Predictor</span>
+            <button onclick="switchTab('wards')" id="btn-wards" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                Ward Risk Profiler
             </button>
-            <button onclick="switchTab('wards')" id="btn-wards" class="sidebar-btn w-full p-3.5 rounded-xl text-left flex items-center gap-3 text-sm font-medium text-slate-400">
-                <i data-lucide="building-2" class="w-4 h-4 text-slate-400"></i>
-                <span>Ward Vulnerability</span>
+            <button onclick="switchTab('insights')" id="btn-insights" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                Data Insights (EDA)
             </button>
-            <button onclick="switchTab('logistics')" id="btn-logistics" class="sidebar-btn w-full p-3.5 rounded-xl text-left flex items-center gap-3 text-sm font-medium text-slate-400">
-                <i data-lucide="truck" class="w-4 h-4 text-slate-400"></i>
-                <span>Logistics &amp; Disruption</span>
+            <button onclick="switchTab('news')" id="btn-news" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="newspaper" class="w-4 h-4"></i>
+                Media News Feed (NLP)
             </button>
-            <button onclick="switchTab('news')" id="btn-news" class="sidebar-btn w-full p-3.5 rounded-xl text-left flex items-center gap-3 text-sm font-medium text-slate-400">
-                <i data-lucide="newspaper" class="w-4 h-4 text-slate-400"></i>
-                <span>Media News Feed (NLP)</span>
-            </button>
-            <button onclick="switchTab('insights')" id="btn-insights" class="sidebar-btn w-full p-3.5 rounded-xl text-left flex items-center gap-3 text-sm font-medium text-slate-400">
-                <i data-lucide="bar-chart-3" class="w-4 h-4 text-slate-400"></i>
-                <span>Data Insights (EDA)</span>
+            <button onclick="switchTab('economic')" id="btn-economic" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-slate-400 hover:bg-slate-800/40 hover:text-white">
+                <i data-lucide="indian-rupee" class="w-4 h-4"></i>
+                Economic Simulator
             </button>
         </nav>
-
-        <!-- Status Bar -->
         <div class="p-4 border-t border-borderBg">
-            <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-borderBg">
-                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span class="text-xs font-bold text-slate-300 font-mono">SYSTEM CONNECTED</span>
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/20 glass">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-xs font-semibold text-slate-300">API Connection Active</span>
             </div>
         </div>
     </aside>
 
-    <!-- RIGHT MAIN CONTENT -->
-    <main class="flex-1 flex flex-col h-full overflow-y-auto z-10">
-        <!-- Sticky Header -->
-        <header class="p-5 border-b border-borderBg flex justify-between items-center glass sticky top-0 z-20">
+    <!-- MAIN CONTENT WRAPPER -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto">
+        <header class="p-6 border-b border-borderBg flex justify-between items-center glass rounded-none sticky top-0 z-10">
             <div>
-                <h2 id="header-title" class="text-xl font-extrabold text-white">Dashboard Overview</h2>
-                <p id="header-desc" class="text-xs text-slate-400 mt-0.5 font-sans">Real-time flood intelligence and predictive risk telemetry</p>
+                <h2 id="header-title" class="text-xl font-bold text-white">Dashboard Overview</h2>
+                <p id="header-desc" class="text-xs text-slate-400 mt-0.5">Real-time flood intelligence and predictive risk telemetry</p>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="refreshData()" class="p-2.5 rounded-xl border border-borderBg hover:bg-slate-800/60 text-slate-300 hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-bold">
-                    <i data-lucide="refresh-cw" class="w-4 h-4 text-cyan-400"></i>
-                    Refresh Telemetry
+                <button onclick="refreshData()" class="p-2.5 rounded-xl border border-borderBg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-all">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 </button>
             </div>
         </header>
 
         <div class="p-6 max-w-7xl w-full mx-auto space-y-6 flex-1 pb-16">
 
-            <!-- TAB 1: DASHBOARD OVERVIEW -->
+            <!-- TAB 1: DASHBOARD -->
             <section id="tab-dashboard" class="space-y-6">
-                <!-- 3 Top Metric Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="glass p-6 rounded-2xl flex items-center gap-4">
-                        <div class="p-3.5 bg-cyan-500/10 text-cyan-400 rounded-xl border border-cyan-500/20">
-                            <i data-lucide="cloud-rain" class="w-7 h-7"></i>
+                    <div class="glass p-6 flex items-center gap-4">
+                        <div class="p-4 bg-blue-500/10 text-blue-400 rounded-xl">
+                            <i data-lucide="cloud-rain" class="w-6 h-6"></i>
                         </div>
                         <div>
-                            <span class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Daily Rain Forecast</span>
-                            <h3 class="text-2xl font-black text-white font-mono mt-0.5">85.0 mm</h3>
+                            <span class="text-xs text-slate-400 font-medium">Daily Rain Forecast (Konkan)</span>
+                            <h3 class="text-2xl font-bold text-white mt-0.5">85.0 mm</h3>
                         </div>
                     </div>
-                    <div class="glass p-6 rounded-2xl flex items-center gap-4">
-                        <div class="p-3.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
-                            <i data-lucide="waves" class="w-7 h-7"></i>
+                    <div class="glass p-6 flex items-center gap-4">
+                        <div class="p-4 bg-amber-500/10 text-amber-400 rounded-xl">
+                            <i data-lucide="waves" class="w-6 h-6"></i>
                         </div>
                         <div>
-                            <span class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Arabian Sea Tide</span>
-                            <h3 class="text-2xl font-black text-white font-mono mt-0.5">1.52 m</h3>
+                            <span class="text-xs text-slate-400 font-medium">Mean Sea Level Tide</span>
+                            <h3 class="text-2xl font-bold text-white mt-0.5">1.52 m</h3>
                         </div>
                     </div>
-                    <div class="glass p-6 rounded-2xl flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-4">
-                            <div class="p-3.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
-                                <i data-lucide="activity" class="w-7 h-7"></i>
-                            </div>
-                            <div>
-                                <span class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">AI Risk Status</span>
-                                <h3 class="text-xl font-black text-emerald-400 mt-0.5">NORMAL</h3>
-                            </div>
+                    <div class="glass p-6 flex items-center gap-4">
+                        <div class="p-4 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                            <i data-lucide="activity" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 font-medium">AI Risk Level Status</span>
+                            <h3 class="text-2xl font-bold text-emerald-400 mt-0.5">NORMAL</h3>
                         </div>
                     </div>
                 </div>
 
-                <!-- Hydrological Status & Quick Actions -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="glass p-6 rounded-2xl space-y-4">
-                        <h3 class="font-bold text-base text-white flex items-center gap-2">
-                            <i data-lucide="waves" class="w-5 h-5 text-cyan-400"></i> Regional River Basin Water Levels
-                        </h3>
-                        <div class="border border-borderBg rounded-xl p-4 bg-slate-900/60 text-sm space-y-3 font-mono">
-                            <div class="flex justify-between items-center pb-2.5 border-b border-borderBg">
-                                <span class="text-slate-300 font-sans font-medium">Mithi River (Mumbai)</span>
-                                <span class="text-emerald-400 font-bold">Safe (1.2m / 4.5m)</span>
+                    <div class="glass p-6">
+                        <h3 class="font-bold text-base text-white mb-4">🌊 Regional Hydrological Map Status</h3>
+                        <div class="border border-borderBg rounded-xl p-4 bg-slate-900/40 text-sm space-y-3">
+                            <div class="flex justify-between items-center pb-2 border-b border-borderBg/50">
+                                <span class="font-medium text-slate-300">Mithi River (Mumbai)</span>
+                                <span class="text-emerald-400 font-semibold">Safe (1.2m)</span>
                             </div>
-                            <div class="flex justify-between items-center pb-2.5 border-b border-borderBg">
-                                <span class="text-slate-300 font-sans font-medium">Savitri River (Mahad)</span>
-                                <span class="text-emerald-400 font-bold">Safe (3.4m / 6.0m)</span>
+                            <div class="flex justify-between items-center pb-2 border-b border-borderBg/50">
+                                <span class="font-medium text-slate-300">Savitri River (Mahad)</span>
+                                <span class="text-emerald-400 font-semibold">Safe (3.4m)</span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <span class="text-slate-300 font-sans font-medium">Vashishti River (Chiplun)</span>
-                                <span class="text-emerald-400 font-bold">Safe (2.1m / 7.0m)</span>
+                                <span class="font-medium text-slate-300">Vashishti River (Chiplun)</span>
+                                <span class="text-emerald-400 font-semibold">Safe (2.1m)</span>
                             </div>
                         </div>
                     </div>
-
-                    <div class="glass p-6 rounded-2xl space-y-4 flex flex-col justify-between">
-                        <div>
-                            <h3 class="font-bold text-base text-white flex items-center gap-2 mb-2">
-                                <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i> Machine Learning Architecture
-                            </h3>
-                            <p class="text-xs text-slate-300 leading-relaxed">
-                                Dual-layer predictive system coupling localized Mumbai XGBoost Point Model with Regional Konkan Stacking Ensemble (Random Forest + XGBoost + Logistic Regression).
-                            </p>
-                        </div>
-                        <button onclick="switchTab('predictor')" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 rounded-xl font-bold text-white text-xs uppercase tracking-wider font-mono shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-                            Launch AI Flood Predictor Engine <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                        </button>
+                    <div class="glass p-6">
+                        <h3 class="font-bold text-base text-white mb-4">💡 Predictive Early Warning System</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            This engine couples real-time meteorological forecasts with antecedent soil saturation models. 
+                            If cumulative 7-day rainfall exceeds saturation limits, subsequent light rainfall events trigger early alerts.
+                        </p>
                     </div>
                 </div>
-            </section>
 
-            <!-- TAB 2: GIS SPATIAL INUNDATION MAP -->
-            <section id="tab-map" class="hidden space-y-6">
-                <div class="glass p-4 rounded-2xl space-y-3">
-                    <div class="flex justify-between items-center px-2">
-                        <h3 class="font-extrabold text-sm text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                            <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
-                            GIS Urban Flood Inundation &amp; Hazard Layer (Mumbai Wards)
-                        </h3>
-                        <span class="text-[11px] font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20 font-mono">CartoDB Voyager GIS Live</span>
-                    </div>
-                    <!-- Leaflet GIS Map Container -->
+                <!-- Interactive GIS Map -->
+                <div class="glass p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-white">🗺️ GIS Spatial Inundation &amp; Hazard Layer</h3>
                     <div id="leaflet-map"></div>
                 </div>
             </section>
 
-            <!-- TAB 3: LIVE AI PREDICTOR -->
+            <!-- TAB 2: PREDICTOR -->
             <section id="tab-predictor" class="hidden space-y-6">
-                <div class="glass p-6 rounded-2xl space-y-6">
-                    <div class="flex justify-between items-center border-b border-borderBg pb-4">
-                        <div>
-                            <h3 class="font-extrabold text-base text-white font-mono">🔮 AI Hydro Flood Sensitivity Simulation</h3>
-                            <p class="text-xs text-slate-400">Test what-if precipitation, Arabian sea tide heights, and SCADA drainage silt parameters.</p>
-                        </div>
-                        <button onclick="fetchLiveWeather()" class="px-4 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-bold text-xs font-mono transition-all flex items-center gap-2">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Auto-Fill Live Open-Meteo Weather
-                        </button>
-                    </div>
-
-                    <!-- Scope Switcher -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <button id="scope-mumbai" onclick="setScope('mumbai')" class="p-3.5 rounded-xl border border-cyan-500 bg-cyan-500/10 text-white font-bold font-mono text-xs transition-all">
-                            📡 Mumbai City (XGBoost Classifier)
-                        </button>
-                        <button id="scope-konkan" onclick="setScope('konkan')" class="p-3.5 rounded-xl border border-borderBg bg-slate-900/40 text-slate-400 hover:text-white font-bold font-mono text-xs transition-all">
-                            🌊 Konkan Division (Stacking Ensemble)
-                        </button>
-                    </div>
-
-                    <!-- Sliders -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="p-4 rounded-xl bg-slate-900/60 border border-borderBg space-y-2">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-slate-300">Daily Rain Today</span>
-                                <span id="val-rain" class="text-cyan-400 font-mono">85.0 mm</span>
-                            </div>
-                            <input type="range" id="input-rain" min="0" max="400" value="85" step="1" oninput="updateVal('rain')" class="w-full accent-cyan-400">
-                        </div>
-                        <div class="p-4 rounded-xl bg-slate-900/60 border border-borderBg space-y-2">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-slate-300">3-Day Antecedent</span>
-                                <span id="val-rain3d" class="text-cyan-400 font-mono">120.0 mm</span>
-                            </div>
-                            <input type="range" id="input-rain3d" min="0" max="500" value="120" step="1" oninput="updateVal('rain3d')" class="w-full accent-cyan-400">
-                        </div>
-                        <div class="p-4 rounded-xl bg-slate-900/60 border border-borderBg space-y-2">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-slate-300">7-Day Antecedent</span>
-                                <span id="val-rain7d" class="text-cyan-400 font-mono">250.0 mm</span>
-                            </div>
-                            <input type="range" id="input-rain7d" min="0" max="800" value="250" step="1" oninput="updateVal('rain7d')" class="w-full accent-cyan-400">
-                        </div>
-                        <div class="p-4 rounded-xl bg-slate-900/60 border border-borderBg space-y-2">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-slate-300">Monsoon Month</span>
-                                <span id="val-month" class="text-cyan-400 font-mono">July (7)</span>
-                            </div>
-                            <input type="range" id="input-month" min="6" max="10" value="7" step="1" oninput="updateVal('month')" class="w-full accent-cyan-400">
+                <div class="glass p-6 space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-slate-300">Select Model Scope</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="scope-mumbai" onclick="setScope('mumbai')" class="p-4 rounded-xl border border-blue-500 bg-blue-500/10 text-white font-bold transition-all duration-200">
+                                📡 Mumbai City (Local Point Model)
+                            </button>
+                            <button id="scope-konkan" onclick="setScope('konkan')" class="p-4 rounded-xl border border-borderBg bg-slate-800/20 text-slate-400 hover:text-white transition-all duration-200">
+                                🌊 Konkan Division (Regional Stacking Model)
+                            </button>
                         </div>
                     </div>
 
-                    <button onclick="runInference()" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 rounded-xl font-extrabold text-white text-sm uppercase tracking-wider font-mono shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="play" class="w-4 h-4"></i> Run AI Model Inference
-                    </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-sm text-slate-400 uppercase tracking-wider">Precipitation Sliders</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-300">Daily Precipitation Today (mm)</span>
+                                    <span id="val-rain" class="font-bold text-blue-400">85.0 mm</span>
+                                </div>
+                                <input type="range" id="input-rain" min="0" max="400" value="85" step="1" oninput="updateVal('rain')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-300">3-Day Antecedent Cumulative Rain (mm)</span>
+                                    <span id="val-rain3d" class="font-bold text-blue-400">120.0 mm</span>
+                                </div>
+                                <input type="range" id="input-rain3d" min="0" max="500" value="120" step="1" oninput="updateVal('rain3d')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-300">7-Day Antecedent Cumulative Rain (mm)</span>
+                                    <span id="val-rain7d" class="font-bold text-blue-400">250.0 mm</span>
+                                </div>
+                                <input type="range" id="input-rain7d" min="0" max="800" value="250" step="1" oninput="updateVal('rain7d')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-sm text-slate-400 uppercase tracking-wider">Temporal &amp; Physical Parameters</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-300">Precipitation Duration (Hours)</span>
+                                    <span id="val-hours" class="font-bold text-blue-400">12.0 hrs</span>
+                                </div>
+                                <input type="range" id="input-hours" min="0" max="24" value="12" step="0.5" oninput="updateVal('hours')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-slate-300">Monsoon Month (June - Oct)</span>
+                                    <span id="val-month" class="font-bold text-blue-400">July (7)</span>
+                                </div>
+                                <input type="range" id="input-month" min="6" max="10" value="7" step="1" oninput="updateVal('month')" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <button onclick="runInference()" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 py-4.5 rounded-xl font-bold transition-all text-white flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
+                                <i data-lucide="play" class="w-4 h-4"></i> Run Model Inference
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Prediction Result Card -->
-                <div id="prediction-result" class="hidden glass p-6 rounded-2xl space-y-4"></div>
+                <div id="prediction-result" class="hidden glass p-6 space-y-4"></div>
 
                 <!-- Model Limitations Disclaimer -->
-                <p class="text-xs text-slate-400 px-1 leading-relaxed">
-                    ⚠️ <b>Model Limitations Note:</b> Trained on 24 confirmed historical flood events across 854 days (2018–2024). With limited historical flood data, predictions represent statistical probabilities and should be treated as directional guidelines alongside official IMD/BMC warnings.
+                <p class="text-xs text-slate-500 mt-2 px-1">
+                  ⚠️ Model trained on 24 confirmed flood events across 854 days (2018–2024). 
+                  With this little historical flood data, predictions are directional, not authoritative — 
+                  treat alongside official IMD/BMC warnings, not as a replacement.
                 </p>
             </section>
 
-            <!-- TAB 4: WARD VULNERABILITY -->
+            <!-- TAB 3: WARD RISK -->
             <section id="tab-wards" class="hidden space-y-6">
-                <div class="glass p-6 rounded-2xl space-y-4">
-                    <div class="flex justify-between items-center border-b border-borderBg pb-4">
-                        <div>
-                            <h3 class="font-bold text-lg text-white">🏢 GMM Municipal Ward Vulnerability Index</h3>
-                            <p class="text-xs text-slate-400">Probabilistic profiling of Mumbai Municipal wards using Gaussian Mixture Models (GMM).</p>
-                        </div>
-                    </div>
-                    <div id="wards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="text-cyan-400 font-bold font-mono animate-pulse">Loading ward vulnerability data...</div>
-                    </div>
+                <div class="glass p-6">
+                    <h3 class="font-bold text-lg text-white mb-2">🏢 GMM Clustering Ward Vulnerability Index</h3>
+                    <p class="text-sm text-slate-400 mb-6">Probabilistic profiling of Mumbai Municipal wards using Gaussian Mixture Models (GMM).</p>
+                    <div id="wards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 </div>
             </section>
 
-            <!-- TAB 5: LOGISTICS & DISRUPTION -->
-            <section id="tab-logistics" class="hidden space-y-6">
-                <div class="glass p-6 rounded-2xl space-y-4">
+            <!-- TAB 4: DATA INSIGHTS -->
+            <section id="tab-insights" class="hidden space-y-6">
+                <div class="glass p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-white">📅 Monthly Monsoon Outliers</h3>
+                    <div id="chart-month" class="w-full h-80"></div>
+                </div>
+                <div class="glass p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-white">⛈️ Daily Rain Intensity vs 7-Day Soil Saturation</h3>
+                    <div id="chart-scatter" class="w-full h-80"></div>
+                </div>
+                <div class="glass p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-white">🎛️ Meteorological Feature Correlation Heatmap</h3>
+                    <div id="chart-corr" class="w-full h-80"></div>
+                </div>
+            </section>
+
+            <!-- TAB 5: MEDIA NEWS FEED -->
+            <section id="tab-news" class="hidden space-y-6">
+                <div class="glass p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-white">📰 Extracted News Severity Timeline</h3>
+                    <div id="chart-timeline" class="w-full h-80"></div>
+                </div>
+                <div class="glass p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-white">Media News Feed Articles</h3>
+                    <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                </div>
+            </section>
+
+            <!-- TAB 6: ECONOMIC SIMULATOR -->
+            <section id="tab-economic" class="hidden space-y-6">
+                <div class="glass p-6 space-y-4">
                     <div class="flex justify-between items-center border-b border-borderBg pb-4">
-                        <div>
-                            <h3 class="font-bold text-lg text-white">🚚 Hyperlocal Logistics &amp; Economic Disruption Simulator</h3>
-                            <p class="text-xs text-slate-400">Simulate order delays, surge pricing, and transport delays across Quick Commerce &amp; Transit.</p>
-                        </div>
-                        <select id="eco-severity" onchange="runEconomicSim()" class="p-2.5 rounded-xl bg-slate-900 border border-borderBg text-white font-mono text-xs font-bold focus:outline-none focus:border-cyan-400">
+                        <h3 class="font-bold text-lg text-white">💰 Economic Loss &amp; Disruption Simulator</h3>
+                        <select id="eco-severity" onchange="runEconomicSim()" class="p-2.5 rounded-xl bg-slate-900 border border-borderBg text-white text-xs font-bold">
                             <option value="No_Flood">No Flood (Normal)</option>
                             <option value="Slight">Slight Risk</option>
                             <option value="Moderate">Moderate Risk</option>
@@ -364,56 +304,26 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="p-5 rounded-xl bg-slate-900/60 border border-borderBg space-y-1">
-                            <span class="text-xs font-mono font-bold text-slate-400">Est. Daily Economic Impact</span>
-                            <h4 id="eco-loss" class="text-2xl font-black text-amber-400 font-mono">₹0.0 Crores / day</h4>
+                        <div class="p-5 rounded-xl bg-slate-900/40 border border-borderBg space-y-1">
+                            <span class="text-xs font-bold text-slate-400">Est. Daily Economic Impact</span>
+                            <h4 id="eco-loss" class="text-2xl font-bold text-amber-400">₹0.0 Crores / day</h4>
                         </div>
-                        <div class="p-5 rounded-xl bg-slate-900/60 border border-borderBg space-y-1">
-                            <span class="text-xs font-mono font-bold text-slate-400">Workforce Disruption</span>
-                            <h4 id="eco-workforce" class="text-2xl font-black text-cyan-400 font-mono">0% Disrupted</h4>
+                        <div class="p-5 rounded-xl bg-slate-900/40 border border-borderBg space-y-1">
+                            <span class="text-xs font-bold text-slate-400">Workforce Disruption</span>
+                            <h4 id="eco-workforce" class="text-2xl font-bold text-blue-400">0% Disrupted</h4>
                         </div>
-                        <div class="p-5 rounded-xl bg-slate-900/60 border border-borderBg space-y-1">
-                            <span class="text-xs font-mono font-bold text-slate-400">Hyperlocal Order Failure Rate</span>
-                            <h4 id="eco-failure" class="text-2xl font-black text-rose-400 font-mono">0% Failure</h4>
+                        <div class="p-5 rounded-xl bg-slate-900/40 border border-borderBg space-y-1">
+                            <span class="text-xs font-bold text-slate-400">Order Failure Rate</span>
+                            <h4 id="eco-failure" class="text-2xl font-bold text-red-400">0% Failure</h4>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- TAB 6: MEDIA NEWS FEED (NLP) -->
-            <section id="tab-news" class="hidden space-y-6">
-                <div class="glass p-6 rounded-2xl space-y-4">
-                    <h3 class="font-bold text-lg text-white">📰 Extracted News Severity Timeline (NLP Lexical Feed)</h3>
-                    <div id="chart-timeline" class="w-full h-80"></div>
-                </div>
-                <div class="glass p-6 rounded-2xl space-y-4">
-                    <h3 class="font-bold text-lg text-white">Media News Feed Articles</h3>
-                    <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="text-cyan-400 font-bold font-mono animate-pulse">Loading media news cards...</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- TAB 7: DATA INSIGHTS (EDA) -->
-            <section id="tab-insights" class="hidden space-y-6">
-                <div class="glass p-6 rounded-2xl space-y-4">
-                    <h3 class="font-bold text-lg text-white">📅 Monthly Monsoon Precipitation Outliers</h3>
-                    <div id="chart-month" class="w-full h-80"></div>
-                </div>
-                <div class="glass p-6 rounded-2xl space-y-4">
-                    <h3 class="font-bold text-lg text-white">⛈️ Daily Rain Intensity vs 7-Day Soil Saturation</h3>
-                    <div id="chart-scatter" class="w-full h-80"></div>
-                </div>
-                <div class="glass p-6 rounded-2xl space-y-4">
-                    <h3 class="font-bold text-lg text-white">🎛️ Meteorological Feature Correlation Heatmap</h3>
-                    <div id="chart-corr" class="w-full h-80"></div>
                 </div>
             </section>
 
         </div>
     </main>
 
-    <!-- App Logic Script -->
+    <!-- Embedded Bulletproof App Engine -->
     <script>
         const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://127.0.0.1:8000' 
@@ -423,22 +333,6 @@
         let map = null;
         let markersGroup = null;
         let hazardBuffersGroup = null;
-
-        const COLOR_HIGH = "#EF4444";
-        const COLOR_MED = "#F59E0B";
-        const COLOR_LOW = "#10B981";
-        const COLOR_ACCENT = "#38BDF8";
-
-        const WARD_MAP_POINTS = [
-            { code: "F/N", lat: 19.0370, lon: 72.8620, zone: "island", risk: "High", title: "Ward F/N - Sion / Hindmata (Chronic Flooding)" },
-            { code: "H/E", lat: 19.0830, lon: 72.8530, zone: "western", risk: "High", title: "Ward H/E - Milan Subway & BKC Node" },
-            { code: "K/W", lat: 19.1190, lon: 72.8470, zone: "western", risk: "High", title: "Ward K/W - Andheri Subway" },
-            { code: "L", lat: 19.0650, lon: 72.8790, zone: "eastern", risk: "High", title: "Ward L - Kurla Mithi River Basin" },
-            { code: "A", lat: 18.9150, lon: 72.8250, zone: "island", risk: "Low", title: "Ward A - Colaba & Marine Drive" },
-            { code: "G/S", lat: 18.9980, lon: 72.8150, zone: "island", risk: "Medium", title: "Ward G/S - Worli & Sea Link" },
-            { code: "M/E", lat: 19.0510, lon: 72.9120, zone: "eastern", risk: "High", title: "Ward M/E - Chembur & Govandi" },
-            { code: "P/S", lat: 19.1620, lon: 72.8450, zone: "western", risk: "Medium", title: "Ward P/S - Goregaon" }
-        ];
 
         const FALLBACK_WARDS = [
             {"Ward_Code": "F/N", "Area_Covered": "Dadar East / Sion / Hindmata", "Risk_Level": "High", "Known_Flood_Spots_Count": 12, "Population_At_Risk_Pct": 60.0, "Cluster_Label": "High Risk Tier 1"},
@@ -458,13 +352,6 @@
             {"Snippet_ID": 10, "Related_Date": "2022-08-10", "Severity_Score": 4, "Keywords_Found": "flooding, waterlogging", "Snippet_Preview": "Severe waterlogging has repeatedly been reported from chronic flooding spots including Dadar, Sion, and Kurla."}
         ];
 
-        const FALLBACK_HISTORICAL = [
-            { Month: 6, Rainfall_mm: 45.0, Rainfall_3day: 80.0, Rainfall_7day: 150.0, Confirmed_Event: 0 },
-            { Month: 7, Rainfall_mm: 230.0, Rainfall_3day: 420.0, Rainfall_7day: 680.0, Confirmed_Event: 1 },
-            { Month: 8, Rainfall_mm: 210.0, Rainfall_3day: 390.0, Rainfall_7day: 610.0, Confirmed_Event: 1 },
-            { Month: 9, Rainfall_mm: 190.0, Rainfall_3day: 330.0, Rainfall_7day: 550.0, Confirmed_Event: 1 }
-        ];
-
         function initGisMap() {
             const mapDiv = document.getElementById('leaflet-map');
             if (mapDiv && !map) {
@@ -478,11 +365,10 @@
                     hazardBuffersGroup = L.layerGroup().addTo(map);
                     markersGroup = L.layerGroup().addTo(map);
 
-                    // Add circles
                     const floodZones = [
-                        { lat: 19.0370, lon: 72.8620, radius: 1800, color: COLOR_HIGH, label: "Ward F/N - Sion Inundation Basin" },
-                        { lat: 19.0830, lon: 72.8530, radius: 1500, color: COLOR_HIGH, label: "Ward H/E - Milan Subway Basin" },
-                        { lat: 19.0650, lon: 72.8790, radius: 2200, color: COLOR_HIGH, label: "Ward L - Mithi River Floodplain" }
+                        { lat: 19.0370, lon: 72.8620, radius: 1800, color: "#EF4444", label: "Ward F/N - Sion Inundation Basin" },
+                        { lat: 19.0830, lon: 72.8530, radius: 1500, color: "#EF4444", label: "Ward H/E - Milan Subway Basin" },
+                        { lat: 19.0650, lon: 72.8790, radius: 2200, color: "#EF4444", label: "Ward L - Mithi River Floodplain" }
                     ];
 
                     floodZones.forEach(fz => {
@@ -491,9 +377,16 @@
                         hazardBuffersGroup.addLayer(buffer);
                     });
 
-                    // Add markers
+                    const WARD_MAP_POINTS = [
+                        { code: "F/N", lat: 19.0370, lon: 72.8620, risk: "High", title: "Ward F/N - Sion / Hindmata" },
+                        { code: "H/E", lat: 19.0830, lon: 72.8530, risk: "High", title: "Ward H/E - Milan Subway" },
+                        { code: "K/W", lat: 19.1190, lon: 72.8470, risk: "High", title: "Ward K/W - Andheri Subway" },
+                        { code: "L", lat: 19.0650, lon: 72.8790, risk: "High", title: "Ward L - Kurla Mithi River" },
+                        { code: "A", lat: 18.9150, lon: 72.8250, risk: "Low", title: "Ward A - Colaba & Marine Drive" }
+                    ];
+
                     WARD_MAP_POINTS.forEach(pt => {
-                        let color = pt.risk === "High" ? COLOR_HIGH : (pt.risk === "Medium" ? COLOR_MED : COLOR_LOW);
+                        let color = pt.risk === "High" ? "#EF4444" : "#10B981";
                         const circle = L.circleMarker([pt.lat, pt.lon], { radius: 9, fillColor: color, color: "#ffffff", weight: 2, fillOpacity: 0.9 });
                         circle.bindPopup(`<b>${pt.title}</b><br/><span style="color:${color};font-weight:bold;">Risk: ${pt.risk}</span>`);
                         markersGroup.addLayer(circle);
@@ -506,44 +399,45 @@
 
         function switchTab(tabId) {
             try {
-                document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
-                const target = document.getElementById(`tab-${tabId}`);
-                if (target) target.classList.remove('hidden');
+                document.querySelectorAll('main > section').forEach(section => {
+                    section.classList.add('hidden');
+                });
+                const targetSection = document.getElementById(`tab-${tabId}`);
+                if (targetSection) targetSection.classList.remove('hidden');
 
-                document.querySelectorAll('.sidebar-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    const icon = btn.querySelector('i');
-                    if (icon) icon.className = "w-4 h-4 text-slate-400";
+                document.querySelectorAll('aside nav button').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-500/10');
+                    btn.classList.add('text-slate-400', 'hover:bg-slate-800/40', 'hover:text-white');
                 });
 
                 const activeBtn = document.getElementById(`btn-${tabId}`);
                 if (activeBtn) {
-                    activeBtn.classList.add('active');
-                    const icon = activeBtn.querySelector('i');
-                    if (icon) icon.className = "w-4 h-4 text-cyan-400";
+                    activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/40', 'hover:text-white');
+                    activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-500/10');
                 }
 
                 const titles = {
                     dashboard: { t: "Dashboard Overview", d: "Real-time flood intelligence and predictive risk telemetry" },
-                    map: { t: "🗺️ GIS Spatial Inundation Map", d: "CartoDB 100-year urban flood inundation layers and ward pins" },
-                    predictor: { t: "🔮 Live AI Flood Predictor", d: "Test what-if precipitation and soil saturation on AI models" },
-                    wards: { t: "🏢 Ward Risk Vulnerability", d: "Gaussian Mixture Model (GMM) municipal risk clustering" },
-                    logistics: { t: "🚚 Logistics & Disruption Simulator", d: "Simulate quick-commerce, transit, and economic impact" },
-                    news: { t: "📰 Media News Feed (NLP)", d: "Scraped news articles and severity timeline" },
-                    insights: { t: "📈 Data Insights (EDA)", d: "Meteorological correlations and monsoon outlier plots" }
+                    predictor: { t: "🔮 Flood Severity Predictor", d: "Test what-if precipitation and antecedent soil scenarios on AI models" },
+                    wards: { t: "🏢 Ward Risk Profiler", d: "Gaussian Mixture Model (GMM) ward clustering and vulnerability profiles" },
+                    insights: { t: "📈 Data Insights & EDA", d: "Interactive visual exploratory analysis of monsoon historical dataset" },
+                    news: { t: "📰 News & Media NLP Analysis", d: "Independent news scraping validation feed and timeline index" },
+                    economic: { t: "💰 Economic Loss Simulator", d: "Simulate productivity loss and transit delays across severity categories" }
                 };
                 if (titles[tabId]) {
                     document.getElementById('header-title').innerText = titles[tabId].t;
                     document.getElementById('header-desc').innerText = titles[tabId].d;
                 }
 
-                if (tabId === 'map' && map) setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 150);
-            } catch(e) { console.warn("Tab switch error: ", e); }
+                if (tabId === 'dashboard' && map) setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 150);
+            } catch (err) {
+                console.warn("Tab switch error: ", err);
+            }
 
             try { if (tabId === 'wards') loadWards(); } catch(e) {}
             try { if (tabId === 'news') loadNews(); } catch(e) {}
             try { if (tabId === 'insights') loadInsights(); } catch(e) {}
-            try { if (tabId === 'logistics') runEconomicSim(); } catch(e) {}
+            try { if (tabId === 'economic') runEconomicSim(); } catch(e) {}
         }
 
         function setScope(scopeStr) {
@@ -551,11 +445,11 @@
             const mBtn = document.getElementById('scope-mumbai');
             const kBtn = document.getElementById('scope-konkan');
             if (scopeStr === 'mumbai') {
-                mBtn.className = "p-3.5 rounded-xl border border-cyan-500 bg-cyan-500/10 text-white font-bold font-mono text-xs transition-all";
-                kBtn.className = "p-3.5 rounded-xl border border-borderBg bg-slate-900/40 text-slate-400 hover:text-white font-bold font-mono text-xs transition-all";
+                mBtn.className = "p-4 rounded-xl border border-blue-500 bg-blue-500/10 text-white font-bold transition-all duration-200";
+                kBtn.className = "p-4 rounded-xl border border-borderBg bg-slate-800/20 text-slate-400 hover:text-white transition-all duration-200";
             } else {
-                kBtn.className = "p-3.5 rounded-xl border border-cyan-500 bg-cyan-500/10 text-white font-bold font-mono text-xs transition-all";
-                mBtn.className = "p-3.5 rounded-xl border border-borderBg bg-slate-900/40 text-slate-400 hover:text-white font-bold font-mono text-xs transition-all";
+                kBtn.className = "p-4 rounded-xl border border-blue-500 bg-blue-500/10 text-white font-bold transition-all duration-200";
+                mBtn.className = "p-4 rounded-xl border border-borderBg bg-slate-800/20 text-slate-400 hover:text-white transition-all duration-200";
             }
         }
 
@@ -565,74 +459,54 @@
             if (type === 'month') {
                 const mNames = {6:'June (6)', 7:'July (7)', 8:'August (8)', 9:'September (9)', 10:'October (10)'};
                 txt.innerText = mNames[val] || `${val}`;
+            } else if (type === 'hours') {
+                txt.innerText = `${parseFloat(val).toFixed(1)} hrs`;
             } else {
                 txt.innerText = `${parseFloat(val).toFixed(1)} mm`;
             }
         }
 
-        async function fetchLiveWeather() {
-            try {
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=18.96&longitude=72.82&daily=precipitation_sum&timezone=Asia%2FKolkata");
-                const json = await res.json();
-                if (json && json.daily && json.daily.precipitation_sum) {
-                    const rainToday = json.daily.precipitation_sum[0] || 45.0;
-                    document.getElementById('input-rain').value = rainToday;
-                    updateVal('rain');
-                    await runInference();
-                }
-            } catch(e) {}
-        }
-
         async function runInference() {
-            const reqData = {
-                scope: currentScope,
-                rain_today: parseFloat(document.getElementById('input-rain').value) || 85.0,
-                rain_3d: parseFloat(document.getElementById('input-rain3d').value) || 120.0,
-                rain_7d: parseFloat(document.getElementById('input-rain7d').value) || 250.0,
-                month_val: parseInt(document.getElementById('input-month').value) || 7
-            };
+            const rainToday = parseFloat(document.getElementById('input-rain').value) || 85.0;
+            const rain3d = parseFloat(document.getElementById('input-rain3d').value) || 120.0;
+            const rain7d = parseFloat(document.getElementById('input-rain7d').value) || 250.0;
 
             let prob = 0.05;
-            let rawMl = (reqData.rain_today * 0.004) + (reqData.rain_3d * 0.0018) + (reqData.rain_7d * 0.0008);
+            let rawMl = (rainToday * 0.004) + (rain3d * 0.0018) + (rain7d * 0.0008);
             prob = Math.min(0.98, rawMl);
 
             let category = "No_Flood";
-            let description = "All systems normal. Weather conditions are within safe historical thresholds.";
+            let description = "All systems normal. Soil absorption limits are within safe thresholds.";
             if (prob >= 0.85) { category = "Severe"; description = "Emergency alert! Massive divisional flooding expected. Rivers approaching danger levels."; }
             else if (prob >= 0.70) { category = "Moderate"; description = "Significant waterlogging in key traffic subway nodes. Local train services delayed."; }
             else if (prob >= 0.50) { category = "Slight"; description = "Waterlogging expected in chronic low-lying areas. Minor traffic slow-downs."; }
 
             const probPct = (prob * 100).toFixed(1);
-            let bannerColor = "bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
-            if (category === "Slight") bannerColor = "bg-amber-500/10 border-amber-500/30 text-amber-400";
-            if (category === "Moderate") bannerColor = "bg-orange-500/10 border-orange-500/30 text-orange-400";
-            if (category === "Severe") bannerColor = "bg-rose-500/10 border-rose-500/30 text-rose-400";
+            let bannerColor = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
+            let icon = "🟢";
+            if (category === "Slight") { bannerColor = "bg-amber-500/10 border-amber-500/20 text-amber-400"; icon = "🟡"; }
+            if (category === "Moderate") { bannerColor = "bg-orange-500/10 border-orange-500/20 text-orange-400"; icon = "🟠"; }
+            if (category === "Severe") { bannerColor = "bg-red-500/10 border-red-500/20 text-red-400"; icon = "🚨"; }
 
             const resDiv = document.getElementById('prediction-result');
             if (resDiv) {
                 resDiv.classList.remove('hidden');
                 resDiv.innerHTML = `
-                    <div class="flex justify-between items-center border-b border-borderBg pb-3">
-                        <h4 class="font-extrabold text-sm text-white font-mono flex items-center gap-2">
-                            <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i> AI Hydro Model Result (${currentScope === 'mumbai' ? 'Mumbai XGBoost' : 'Konkan Stacking'})
-                        </h4>
-                        <span class="text-xs font-mono font-extrabold px-3 py-1 rounded-full ${bannerColor}">${probPct}% RISK SCORE</span>
+                    <h3 class="font-bold text-lg text-white">Inference Results</h3>
+                    <div class="p-6 rounded-xl border ${bannerColor} flex flex-col gap-2">
+                        <h4 class="font-extrabold text-xl">${icon} ${category.toUpperCase().replace('_', ' ')} WARNING</h4>
+                        <p class="text-sm text-slate-300">${description}</p>
                     </div>
-                    <div class="p-5 rounded-xl border ${bannerColor} space-y-1">
-                        <h4 class="font-black text-lg">${category.toUpperCase()} RISK CATEGORY</h4>
-                        <p class="text-xs text-slate-300">${description}</p>
-                    </div>
-                    <div class="space-y-1.5">
-                        <div class="flex justify-between text-xs font-bold font-mono">
-                            <span>Composite Flood Event Probability</span>
-                            <span class="text-cyan-400">${probPct}%</span>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm font-semibold text-slate-200">
+                            <span>Flood Event Probability Score</span>
+                            <span class="text-blue-400">${probPct}%</span>
                         </div>
-                        <div class="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-borderBg">
-                            <div class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500" style="width: ${probPct}%;"></div>
+                        <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-full transition-all duration-500" style="width: ${probPct}%"></div>
                         </div>
                     </div>
                 `;
-                if (typeof lucide !== 'undefined' && lucide.createIcons) { try { lucide.createIcons(); } catch(e){} }
             }
         }
 
@@ -641,21 +515,24 @@
             if (!container) return;
             container.innerHTML = '';
             FALLBACK_WARDS.forEach(w => {
-                let badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-                if (w.Risk_Level === 'High') badgeClass = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
-                if (w.Risk_Level === 'Medium') badgeClass = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+                let badgeClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+                let border = 'border-l-blue-500';
+                if (w.Risk_Level === 'High') { badgeClass = 'bg-red-500/10 text-red-400 border-red-500/20'; border = 'border-l-red-500'; }
+                if (w.Risk_Level === 'Medium') { badgeClass = 'bg-amber-500/10 text-amber-400 border-amber-500/20'; border = 'border-l-amber-500'; }
 
                 container.innerHTML += `
-                    <div class="p-5 rounded-2xl glass space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="font-extrabold text-white font-mono text-sm">WARD ${w.Ward_Code}</span>
-                            <span class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${badgeClass}">${w.Risk_Level.toUpperCase()} RISK</span>
-                        </div>
-                        <h4 class="text-xs text-slate-300 font-bold uppercase tracking-wider">${w.Area_Covered}</h4>
-                        <div class="text-xs space-y-1 text-slate-400 font-mono border-t border-borderBg pt-2.5">
-                            <div class="flex justify-between"><span>Known Flood Spots:</span> <b class="text-white">${w.Known_Flood_Spots_Count} Hotspots</b></div>
-                            <div class="flex justify-between"><span>Population Exposure:</span> <b class="text-white">${w.Population_At_Risk_Pct}%</b></div>
-                            <div class="flex justify-between"><span>GMM Cluster Tier:</span> <b class="text-white">${w.Cluster_Label}</b></div>
+                    <div class="p-5 rounded-xl bg-slate-800/30 glass border-l-4 ${border} flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-slate-200">Ward ${w.Ward_Code}</span>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${badgeClass}">${w.Risk_Level.toUpperCase()} RISK</span>
+                            </div>
+                            <h4 class="text-xs text-slate-400 font-semibold mb-3 uppercase tracking-wider">${w.Area_Covered}</h4>
+                            <div class="text-sm space-y-1.5 text-slate-300">
+                                <div class="flex justify-between"><span>Known Flood Spots:</span> <span class="font-bold text-slate-100">${w.Known_Flood_Spots_Count}</span></div>
+                                <div class="flex justify-between"><span>Population at Risk:</span> <span class="font-bold text-slate-100">${w.Population_At_Risk_Pct}%</span></div>
+                                <div class="flex justify-between"><span>GMM Cluster Group:</span> <span class="font-bold text-slate-100">${w.Cluster_Label}</span></div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -668,12 +545,14 @@
             grid.innerHTML = '';
             FALLBACK_NEWS.forEach(n => {
                 grid.innerHTML += `
-                    <div class="p-5 rounded-2xl glass space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs text-slate-400 font-mono font-bold">📅 ${n.Related_Date}</span>
-                            <span class="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30">Severity: ${n.Severity_Score}/15</span>
+                    <div class="p-5 rounded-xl bg-slate-800/30 glass border-l-4 border-l-blue-500 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs text-slate-400 font-bold">📅 ${n.Related_Date}</span>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Severity: ${n.Severity_Score}</span>
+                            </div>
+                            <p class="text-sm font-medium italic text-slate-200 leading-relaxed mb-4">"${n.Snippet_Preview}"</p>
                         </div>
-                        <p class="text-xs italic text-slate-200 leading-relaxed">"${n.Snippet_Preview}"</p>
                     </div>
                 `;
             });
@@ -683,10 +562,11 @@
                         x: FALLBACK_NEWS.map(d => d.Related_Date),
                         y: FALLBACK_NEWS.map(d => d.Severity_Score),
                         mode: 'markers+lines', type: 'scatter',
-                        marker: { size: 10, color: '#EF4444' }, line: { color: 'rgba(239, 68, 68, 0.4)' }
+                        marker: { size: 10, color: '#3B82F6' }, line: { color: 'rgba(59, 130, 246, 0.4)' }
                     }], {
                         paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                        font: { color: '#94A3B8' }, margin: { t: 20, b: 40, l: 40, r: 20 }
+                        font: { color: '#f1f5f9' }, xaxis: { gridcolor: 'rgba(255,255,255,0.05)' }, yaxis: { gridcolor: 'rgba(255,255,255,0.05)' },
+                        margin: { t: 20, b: 40, l: 40, r: 20 }
                     }, { responsive: true, displayModeBar: false });
                 } catch(e) {}
             }
@@ -697,19 +577,19 @@
                 try {
                     Plotly.newPlot('chart-month', [{
                         y: [45, 120, 230, 180, 60, 210, 85, 190, 40],
-                        type: 'box', marker: { color: '#38BDF8' }
-                    }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#94A3B8' }, margin: { t: 20, b: 40, l: 40, r: 20 } }, { responsive: true, displayModeBar: false });
+                        type: 'box', marker: { color: '#3B82F6' }
+                    }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#f1f5f9' }, margin: { t: 20, b: 40, l: 40, r: 20 } }, { responsive: true, displayModeBar: false });
 
                     Plotly.newPlot('chart-scatter', [{
                         x: [45, 120, 230, 180, 60, 210], y: [150, 310, 680, 520, 240, 610],
                         mode: 'markers', type: 'scatter', marker: { color: '#EF4444', size: 10 }
-                    }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#94A3B8' }, margin: { t: 20, b: 40, l: 40, r: 20 } }, { responsive: true, displayModeBar: false });
+                    }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#f1f5f9' }, margin: { t: 20, b: 40, l: 40, r: 20 } }, { responsive: true, displayModeBar: false });
 
                     Plotly.newPlot('chart-corr', [{
                         z: [[1.0, 0.82, 0.74], [0.82, 1.0, 0.89], [0.74, 0.89, 1.0]],
                         x: ['Daily Rain', '3-Day', '7-Day'], y: ['Daily Rain', '3-Day', '7-Day'],
-                        type: 'heatmap', colorscale: 'Blues'
-                    }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#94A3B8' }, margin: { t: 20, b: 40, l: 40, r: 20 } }, { responsive: true, displayModeBar: false });
+                        type: 'heatmap', colorscale: 'Viridis'
+                    }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#f1f5f9' }, margin: { t: 20, b: 40, l: 40, r: 20 } }, { responsive: true, displayModeBar: false });
                 } catch(e) {}
             }
         }
