@@ -843,8 +843,10 @@
     <!-- App Logic Script -->
     <script src="app.js"></script>
     <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
+        // Initialize Lucide Icons safely
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            try { lucide.createIcons(); } catch(e) {}
+        }
     </script>
 </body>
 </html>

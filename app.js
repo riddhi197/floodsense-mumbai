@@ -307,33 +307,37 @@ function selectWard(wardCode) {
 
 // Left Sidebar Tab Switching
 function switchTab(tabId) {
-    document.querySelectorAll('main > section').forEach(section => {
-        section.classList.add('hidden');
-    });
-    const targetSection = document.getElementById(`tab-${tabId}`);
-    if (targetSection) targetSection.classList.remove('hidden');
+    try {
+        document.querySelectorAll('main > section').forEach(section => {
+            section.classList.add('hidden');
+        });
+        const targetSection = document.getElementById(`tab-${tabId}`);
+        if (targetSection) targetSection.classList.remove('hidden');
 
-    document.querySelectorAll('.sidebar-btn').forEach(btn => {
-        btn.classList.remove('active');
-        const iconEl = btn.querySelector('i');
-        if (iconEl) iconEl.className = "w-5 h-5 mt-0.5 text-slate-600 flex-shrink-0";
-    });
+        document.querySelectorAll('.sidebar-btn').forEach(btn => {
+            btn.classList.remove('active');
+            const iconEl = btn.querySelector('i');
+            if (iconEl) iconEl.className = "w-5 h-5 mt-0.5 text-slate-600 flex-shrink-0";
+        });
 
-    const activeBtn = document.getElementById(`btn-${tabId}`);
-    if (activeBtn) {
-        activeBtn.classList.add('active');
-        const iconEl = activeBtn.querySelector('i');
-        if (iconEl) iconEl.className = "w-5 h-5 mt-0.5 text-[#D97745] flex-shrink-0";
+        const activeBtn = document.getElementById(`btn-${tabId}`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+            const iconEl = activeBtn.querySelector('i');
+            if (iconEl) iconEl.className = "w-5 h-5 mt-0.5 text-[#D97745] flex-shrink-0";
+        }
+
+        if (tabId === 'map' && map) {
+            setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 150);
+        }
+    } catch (err) {
+        console.warn("Tab switch DOM error caught: ", err);
     }
 
-    if (tabId === 'map' && map) {
-        setTimeout(() => { map.invalidateSize(); }, 200);
-    }
-
-    if (tabId === 'wards') loadWards();
-    if (tabId === 'news') loadNews();
-    if (tabId === 'insights') loadInsights();
-    if (tabId === 'logistics') runEconomicSim();
+    try { if (tabId === 'wards') loadWards(); } catch(e) {}
+    try { if (tabId === 'news') loadNews(); } catch(e) {}
+    try { if (tabId === 'insights') loadInsights(); } catch(e) {}
+    try { if (tabId === 'logistics') runEconomicSim(); } catch(e) {}
 }
 
 // FIX C: CHANGE AUTOMATIC WEATHER STATION (AWS) TELEMETRY
@@ -633,8 +637,9 @@ async function runInference() {
                     <div class="h-full rounded transition-all duration-700" style="width: ${probPct}%; background: ${data.category === 'Severe' ? 'linear-gradient(90deg, #D99A2B, #C9473D)' : data.category === 'Moderate' ? 'linear-gradient(90deg, #D97745, #D99A2B)' : 'linear-gradient(90deg, #5F8A6A, #D97745)'}"></div>
                 </div>
             </div>
-        `;
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            try { lucide.createIcons(); } catch(e) {}
+        }
     }
 }
 
@@ -783,7 +788,9 @@ async function loadNews() {
         margin: { t: 20, b: 40, l: 40, r: 20 }
     };
 
-    Plotly.newPlot('chart-timeline', [trace], layout, { responsive: true, displayModeBar: false });
+    if (typeof Plotly !== 'undefined' && Plotly.newPlot) {
+        try { Plotly.newPlot('chart-timeline', [trace], layout, { responsive: true, displayModeBar: false }); } catch(e) {}
+    }
 
     // 2. Render Cards
     grid.innerHTML = '';
@@ -863,14 +870,18 @@ async function loadInsights() {
         marker: { color: m === 'July' ? COLOR_HIGH : COLOR_ACCENT }
     }));
 
-    Plotly.newPlot('chart-month', boxTraces, {
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: '#252525' },
-        xaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)' },
-        yaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)', title: 'Rainfall (mm)' },
-        margin: { t: 20, b: 40, l: 50, r: 20 }
-    }, { responsive: true, displayModeBar: false });
+    if (typeof Plotly !== 'undefined' && Plotly.newPlot) {
+        try {
+            Plotly.newPlot('chart-month', boxTraces, {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#252525' },
+                xaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)' },
+                yaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)', title: 'Rainfall (mm)' },
+                margin: { t: 20, b: 40, l: 50, r: 20 }
+            }, { responsive: true, displayModeBar: false });
+        } catch(e) {}
+    }
 
     // 2. Scatter Plot: Intensity vs Saturation
     const normalDays = cleanData.filter(d => d.confirmed_event === 0);
@@ -894,14 +905,18 @@ async function loadInsights() {
         marker: { color: COLOR_HIGH, size: 10, line: { width: 1, color: '#fff' } }
     };
 
-    Plotly.newPlot('chart-scatter', [traceNormal, traceFlood], {
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: '#252525' },
-        xaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)', title: 'Precipitation Intensity Today (mm)' },
-        yaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)', title: '7-Day Soil Saturation (mm)' },
-        margin: { t: 20, b: 45, l: 50, r: 20 }
-    }, { responsive: true, displayModeBar: false });
+    if (typeof Plotly !== 'undefined' && Plotly.newPlot) {
+        try {
+            Plotly.newPlot('chart-scatter', [traceNormal, traceFlood], {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#252525' },
+                xaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)', title: 'Precipitation Intensity Today (mm)' },
+                yaxis: { gridcolor: 'rgba(0,0,0,0.06)', linecolor: 'rgba(0,0,0,0.1)', title: '7-Day Soil Saturation (mm)' },
+                margin: { t: 20, b: 45, l: 50, r: 20 }
+            }, { responsive: true, displayModeBar: false });
+        } catch(e) {}
+    }
 
     // 3. Correlation Heatmap
     const getMean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
@@ -939,12 +954,16 @@ async function loadInsights() {
         zmin: -1, zmax: 1
     };
 
-    Plotly.newPlot('chart-corr', [traceHeat], {
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: '#252525' },
-        margin: { t: 20, b: 40, l: 100, r: 20 }
-    }, { responsive: true, displayModeBar: false });
+    if (typeof Plotly !== 'undefined' && Plotly.newPlot) {
+        try {
+            Plotly.newPlot('chart-corr', [traceHeat], {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#252525' },
+                margin: { t: 20, b: 40, l: 100, r: 20 }
+            }, { responsive: true, displayModeBar: false });
+        } catch(e) {}
+    }
 }
 
 // LOGISTICS & SECTOR-WISE ECONOMIC DELAY SIMULATOR
@@ -1056,10 +1075,11 @@ function runEconomicSim() {
     }
 }
 
-// Initial load triggers
+// Initial load triggers with defensive try-catch safeguards
 window.onload = async () => {
-    initGisMap();
-    switchTab('map');
-    runEconomicSim();
-    await fetchLiveWeather();
+    try { initGisMap(); } catch(e) { console.warn(e); }
+    try { switchTab('map'); } catch(e) { console.warn(e); }
+    try { runEconomicSim(); } catch(e) { console.warn(e); }
+    try { await fetchLiveWeather(); } catch(e) { console.warn(e); }
+    try { if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons(); } catch(e) {}
 };
